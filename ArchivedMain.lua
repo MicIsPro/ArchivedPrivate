@@ -27,18 +27,38 @@ local infJump
 local noclipLoop
 local lootedItems = {}
 local speedConnection
+local lootCycleIndex = 1
 
-local TargetNPC = nil
-local DistanceBehindTarget = 0
-local YOffset = 0
-local npcTargetingRunning = false
-local npcTargetingConnection
-local selectedNPCName = nil
-
-local tpAuraEnabled = false
-local tpAuraConnection
-local tpAuraIndex = 1
-local tpAuraNPCs = {}
+local lootCyclePositions = {
+    {name = "L.Corp Chest 1", pos = Vector3.new(330, 987, -229), type = "loot"},
+    {name = "L.Corp Chest 2", pos = Vector3.new(95, 1016, 216), type = "loot"},
+    {name = "L.Corp Chest 3", pos = Vector3.new(104, 1016, 216), type = "loot"},
+    {name = "L.Corp Chest 4", pos = Vector3.new(28, 1005, 145), type = "loot"},
+    {name = "Heavy Shelf 1", pos = Vector3.new(337, 987, -224), type = "loot"},
+    {name = "Heavy Shelf 2", pos = Vector3.new(337, 987, -203), type = "loot"},
+    {name = "Heavy Shelf 3", pos = Vector3.new(282, 980, -197), type = "loot"},
+    {name = "Heavy Crate 1", pos = Vector3.new(301, 987, -223), type = "loot"},
+    {name = "Heavy Crate 2", pos = Vector3.new(301, 987, -187), type = "loot"},
+    {name = "Heavy Crate 3", pos = Vector3.new(302, 987, -202), type = "loot"},
+    {name = "Heavy Crate 4", pos = Vector3.new(318, 987, -161), type = "loot"},
+    {name = "Medical 1", pos = Vector3.new(-6, 980, -258), type = "medical"},
+    {name = "Medical 2", pos = Vector3.new(276, 983, -282), type = "medical"},
+    {name = "Medical 3", pos = Vector3.new(332, 999, -235), type = "medical"},
+    {name = "Medical 4", pos = Vector3.new(273, 980, -52), type = "medical"},
+    {name = "Medical 5", pos = Vector3.new(249, 980, 155), type = "medical"},
+    {name = "Medical 6", pos = Vector3.new(17, 980, 267), type = "medical"},
+    {name = "Medical 7", pos = Vector3.new(-328, 980, -156), type = "medical"},
+    {name = "Medical 8", pos = Vector3.new(-218, 980, -10), type = "medical"},
+    {name = "Medical 9", pos = Vector3.new(-173, 980, 67), type = "medical"},
+    {name = "Medical 10", pos = Vector3.new(95, 980, -10), type = "medical"},
+    {name = "Medical 11", pos = Vector3.new(-127, 968, -200), type = "medical"},
+    {name = "Barrel 1", pos = Vector3.new(316, 987, -202), type = "barrel"},
+    {name = "Barrel 2", pos = Vector3.new(306, 980, 32), type = "barrel"},
+    {name = "Barrel 3", pos = Vector3.new(102, 980, 261), type = "barrel"},
+    {name = "Barrel 4", pos = Vector3.new(60, 1005, 131), type = "barrel"},
+    {name = "Barrel 5", pos = Vector3.new(-132, 980, -169), type = "barrel"},
+    {name = "Barrel 6", pos = Vector3.new(-181, 980, 170), type = "barrel"},
+}
 
 local hb = RunService.Heartbeat
 
@@ -47,12 +67,11 @@ local Window = Library:CreateWindow({
     Footer = "V1 - Devotion_M",
     Icon = 95816097006870,
     NotifySide = "Right",
-    ShowCustomCursor = true,
+    ShowCustomCursor = false,
 })
 
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
-    NPCTarget = Window:AddTab("NPC Target", "crosshair"),
     LCorp = Window:AddTab("L.Corp", "building"),
     ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
 }
@@ -216,202 +235,37 @@ local function unloadF3X()
     end
 end
 
-local function teleportToNPC()
-    if not TargetNPC or not TargetNPC.Parent then 
-        npcTargetingRunning = false
-        TargetNPC = nil
+local function cycleLootTeleports()
+    if #lootCyclePositions == 0 then return end
+    
+    local currentTeleport = lootCyclePositions[lootCycleIndex]
+    teleportToPosition(currentTeleport.pos)
+    
+    local posKey = tostring(currentTeleport.pos)
+    if not lootedItems[posKey] then
+        lootedItems[posKey] = true
         Library:Notify({
-            Title = "NPC Target Lost",
-            Description = "Target NPC no longer exists",
-            Time = 3,
+            Title = currentTeleport.type:gsub("^%l", string.upper) .. " Collected",
+            Description = currentTeleport.name .. " has been marked as looted",
+            Time = 2,
         })
-        return 
-    end
-    
-    local character = LocalPlayer.Character
-    if not character then return end
-    
-    local npcTorso = TargetNPC:FindFirstChild("Torso")
-    local myHRP = character:FindFirstChild("HumanoidRootPart")
-    
-    if npcTorso and myHRP then
-        local behindPos = npcTorso.Position - (npcTorso.CFrame.LookVector * DistanceBehindTarget)
-        behindPos = behindPos + Vector3.new(0, YOffset, 0)
-        myHRP.CFrame = CFrame.new(behindPos, behindPos + npcTorso.CFrame.LookVector)
-    end
-end
-
-local function getNPCList()
-    local npcs = {}
-    local aliveFolder = workspace:FindFirstChild("Alive")
-    if not aliveFolder then return npcs end
-    
-    for _, npc in pairs(aliveFolder:GetChildren()) do
-        local torso = npc:FindFirstChild("Torso")
-        local humanoid = npc:FindFirstChild("Humanoid")
-        local isPlayer = Players:GetPlayerFromCharacter(npc)
-        
-        if torso and humanoid and not isPlayer then
-            table.insert(npcs, npc.Name)
-        end
-    end
-    
-    return npcs
-end
-
-local function getAllNPCs()
-    local npcs = {}
-    local aliveFolder = workspace:FindFirstChild("Alive")
-    if not aliveFolder then return npcs end
-    
-    for _, npc in pairs(aliveFolder:GetChildren()) do
-        local torso = npc:FindFirstChild("Torso")
-        local humanoid = npc:FindFirstChild("Humanoid")
-        local isPlayer = Players:GetPlayerFromCharacter(npc)
-        
-        if torso and humanoid and not isPlayer then
-            table.insert(npcs, npc)
-        end
-    end
-    
-    return npcs
-end
-
-local function startNPCTargeting(npcName)
-    local aliveFolder = workspace:FindFirstChild("Alive")
-    if not aliveFolder then
-        Library:Notify({
-            Title = "Error",
-            Description = "Alive folder not found",
-            Time = 3,
-        })
-        return false
-    end
-    
-    TargetNPC = aliveFolder:FindFirstChild(npcName)
-    if not TargetNPC then
-        Library:Notify({
-            Title = "Error",
-            Description = "NPC not found in Alive folder",
-            Time = 3,
-        })
-        return false
-    end
-    
-    npcTargetingRunning = true
-    selectedNPCName = npcName
-    
-    if npcTargetingConnection then
-        npcTargetingConnection:Disconnect()
-    end
-    
-    npcTargetingConnection = RunService.Heartbeat:Connect(function()
-        if npcTargetingRunning then
-            teleportToNPC()
-        end
-    end)
-    
-    Library:Notify({
-        Title = "NPC Targeted",
-        Description = "Now targeting " .. npcName,
-        Time = 3,
-    })
-    
-    return true
-end
-
-local function stopNPCTargeting()
-    npcTargetingRunning = false
-    TargetNPC = nil
-    selectedNPCName = nil
-    
-    if npcTargetingConnection then
-        npcTargetingConnection:Disconnect()
-        npcTargetingConnection = nil
     end
     
     Library:Notify({
-        Title = "NPC Untargeted",
-        Description = "Stopped targeting NPC",
-        Time = 3,
-    })
-end
-
-local function startTpAura()
-    tpAuraEnabled = true
-    tpAuraNPCs = getAllNPCs()
-    tpAuraIndex = 1
-    
-    if #tpAuraNPCs == 0 then
-        Library:Notify({
-            Title = "No NPCs Found",
-            Description = "No NPCs available for TpAura",
-            Time = 3,
-        })
-        tpAuraEnabled = false
-        return false
-    end
-    
-    if tpAuraConnection then
-        tpAuraConnection:Disconnect()
-    end
-    
-    tpAuraConnection = RunService.Heartbeat:Connect(function()
-        if tpAuraEnabled and #tpAuraNPCs > 0 then
-            local character = LocalPlayer.Character
-            if not character then return end
-            
-            local myHRP = character:FindFirstChild("HumanoidRootPart")
-            if not myHRP then return end
-            
-            if tpAuraIndex > #tpAuraNPCs then
-                tpAuraNPCs = getAllNPCs()
-                tpAuraIndex = 1
-            end
-            
-            if tpAuraIndex <= #tpAuraNPCs then
-                local npc = tpAuraNPCs[tpAuraIndex]
-                if npc and npc.Parent then
-                    local npcTorso = npc:FindFirstChild("Torso")
-                    if npcTorso then
-                        local behindPos = npcTorso.Position - (npcTorso.CFrame.LookVector * DistanceBehindTarget)
-                        behindPos = behindPos + Vector3.new(0, YOffset, 0)
-                        myHRP.CFrame = CFrame.new(behindPos, behindPos + npcTorso.CFrame.LookVector)
-                    end
-                end
-                
-                tpAuraIndex = tpAuraIndex + 1
-                wait(0.1)
-            end
-        end
-    end)
-    
-    Library:Notify({
-        Title = "TpAura Started",
-        Description = "Rapidly targeting all NPCs",
-        Time = 3,
+        Title = "Loot Cycle",
+        Description = "Teleported to " .. currentTeleport.name .. " (" .. lootCycleIndex .. "/" .. #lootCyclePositions .. ")",
+        Time = 1,
     })
     
-    return true
-end
-
-local function stopTpAura()
-    tpAuraEnabled = false
-    if tpAuraConnection then
-        tpAuraConnection:Disconnect()
-        tpAuraConnection = nil
+    lootCycleIndex = lootCycleIndex + 1
+    if lootCycleIndex > #lootCyclePositions then
+        lootCycleIndex = 1
     end
-    
-    Library:Notify({
-        Title = "TpAura Stopped",
-        Description = "Stopped rapidly targeting NPCs",
-        Time = 3,
-    })
 end
 
 local MainGroupBox = Tabs.Main:AddLeftGroupbox("Movement", "zap")
 
-MainGroupBox:AddToggle("TpWalk", {
+local SpeedToggle = MainGroupBox:AddToggle("TpWalk", {
     Text = "Speed Walk",
     Default = false,
     Callback = function(Value)
@@ -420,6 +274,14 @@ MainGroupBox:AddToggle("TpWalk", {
         else
             stopTpWalk()
         end
+    end,
+})
+
+SpeedToggle:AddKeyPicker("SpeedWalkKeybind", {
+    Text = "Speed Walk",
+    Mode = "Toggle",
+    Callback = function()
+        SpeedToggle:SetValue(not Toggles.TpWalk.Value)
     end,
 })
 
@@ -437,7 +299,7 @@ MainGroupBox:AddSlider("SpeedSlider", {
 
 MainGroupBox:AddDivider()
 
-MainGroupBox:AddToggle("Noclip", {
+local NoclipToggle = MainGroupBox:AddToggle("Noclip", {
     Text = "Noclip",
     Default = false,
     Callback = function(Value)
@@ -449,7 +311,15 @@ MainGroupBox:AddToggle("Noclip", {
     end,
 })
 
-MainGroupBox:AddToggle("InfJump", {
+NoclipToggle:AddKeyPicker("NoclipKeybind", {
+    Text = "Noclip",
+    Mode = "Toggle",
+    Callback = function()
+        NoclipToggle:SetValue(not Toggles.Noclip.Value)
+    end,
+})
+
+local InfJumpToggle = MainGroupBox:AddToggle("InfJump", {
     Text = "Infinite Jump",
     Default = false,
     Callback = function(Value)
@@ -458,6 +328,14 @@ MainGroupBox:AddToggle("InfJump", {
         else
             stopInfJump()
         end
+    end,
+})
+
+InfJumpToggle:AddKeyPicker("InfJumpKeybind", {
+    Text = "Infinite Jump",
+    Mode = "Toggle",
+    Callback = function()
+        InfJumpToggle:SetValue(not Toggles.InfJump.Value)
     end,
 })
 
@@ -512,106 +390,6 @@ ServerGroupBox:AddButton({
         TeleportService:Teleport(14038329225, LocalPlayer)
     end,
     Tooltip = "Teleport to Normal Server",
-})
-
-local NPCListGroup = Tabs.NPCTarget:AddLeftGroupbox("NPC Selection", "users")
-
-local npcDropdown = NPCListGroup:AddDropdown("NPCList", {
-    Values = {},
-    Default = "",
-    Multi = false,
-    Text = "Select NPC",
-    Tooltip = "Choose an NPC to target",
-})
-
-NPCListGroup:AddButton({
-    Text = "Refresh NPC List",
-    Func = function()
-        local npcs = getNPCList()
-        npcDropdown:SetValues(npcs)
-        if #npcs == 0 then
-            Library:Notify({
-                Title = "No NPCs Found",
-                Description = "No NPCs found in Alive folder",
-                Time = 3,
-            })
-        else
-            Library:Notify({
-                Title = "NPCs Refreshed",
-                Description = "Found " .. #npcs .. " NPCs",
-                Time = 3,
-            })
-        end
-    end,
-    Tooltip = "Refresh the list of available NPCs",
-})
-
-local NPCControlGroup = Tabs.NPCTarget:AddRightGroupbox("NPC Control", "crosshair")
-
-NPCControlGroup:AddToggle("TargetNPC", {
-    Text = "Target Selected NPC",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            local selectedNPC = Options.NPCList.Value
-            if selectedNPC and selectedNPC ~= "" then
-                if startNPCTargeting(selectedNPC) then
-                    
-                else
-                    Toggles.TargetNPC:SetValue(false)
-                end
-            else
-                Library:Notify({
-                    Title = "No NPC Selected",
-                    Description = "Please select an NPC first",
-                    Time = 3,
-                })
-                Toggles.TargetNPC:SetValue(false)
-            end
-        else
-            stopNPCTargeting()
-        end
-    end,
-})
-
-NPCControlGroup:AddToggle("TpAura", {
-    Text = "TpAura (Rapid Target All)",
-    Default = false,
-    Callback = function(Value)
-        if Value then
-            if startTpAura() then
-                
-            else
-                Toggles.TpAura:SetValue(false)
-            end
-        else
-            stopTpAura()
-        end
-    end,
-})
-
-NPCControlGroup:AddSlider("NPCDistance", {
-    Text = "Distance Behind Target",
-    Default = 0,
-    Min = 0,
-    Max = 20,
-    Rounding = 0,
-    Compact = false,
-    Callback = function(Value)
-        DistanceBehindTarget = Value
-    end,
-})
-
-NPCControlGroup:AddSlider("NPCYOffset", {
-    Text = "Y Offset",
-    Default = 0,
-    Min = -20,
-    Max = 20,
-    Rounding = 0,
-    Compact = false,
-    Callback = function(Value)
-        YOffset = Value
-    end,
 })
 
 local LCorpMainGroup = Tabs.LCorp:AddLeftGroupbox("Main Areas", "building")
@@ -694,15 +472,6 @@ for _, loot in ipairs(lootItems) do
         Text = loot.name,
         Func = function()
             teleportToPosition(loot.pos)
-            local posKey = tostring(loot.pos)
-            if not lootedItems[posKey] then
-                lootedItems[posKey] = true
-                Library:Notify({
-                    Title = "Loot Collected",
-                    Description = loot.name .. " has been marked as looted",
-                    Time = 2,
-                })
-            end
         end,
         Tooltip = "Teleport to " .. loot.name,
     })
@@ -729,15 +498,6 @@ for _, med in ipairs(medicalItems) do
         Text = med.name,
         Func = function()
             teleportToPosition(med.pos)
-            local posKey = tostring(med.pos)
-            if not lootedItems[posKey] then
-                lootedItems[posKey] = true
-                Library:Notify({
-                    Title = "Medical Collected",
-                    Description = med.name .. " has been marked as looted",
-                    Time = 2,
-                })
-            end
         end,
         Tooltip = "Teleport to " .. med.name,
     })
@@ -759,78 +519,33 @@ for _, barrel in ipairs(barrels) do
         Text = barrel.name,
         Func = function()
             teleportToPosition(barrel.pos)
-            local posKey = tostring(barrel.pos)
-            if not lootedItems[posKey] then
-                lootedItems[posKey] = true
-                Library:Notify({
-                    Title = "Barrel Collected",
-                    Description = barrel.name .. " has been marked as looted",
-                    Time = 2,
-                })
-            end
         end,
         Tooltip = "Teleport to " .. barrel.name,
     })
 end
 
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.V then
-        if npcTargetingRunning then
-            Toggles.TargetNPC:SetValue(false)
-        end
-        if tpAuraEnabled then
-            Toggles.TpAura:SetValue(false)
-        end
-    end
-end)
+local CycleGroup = Tabs.LCorp:AddLeftGroupbox("Loot Cycle", "rotate-cw")
 
-local function setupNPCAutoRefresh()
-    local aliveFolder = workspace:FindFirstChild("Alive")
-    if aliveFolder then
-        aliveFolder.ChildAdded:Connect(function()
-            wait(0.1)
-            local npcs = getNPCList()
-            npcDropdown:SetValues(npcs)
-        end)
-        
-        aliveFolder.ChildRemoved:Connect(function()
-            wait(0.1)
-            local npcs = getNPCList()
-            npcDropdown:SetValues(npcs)
-        end)
-    end
-    
-    workspace.ChildAdded:Connect(function(child)
-        if child.Name == "Alive" then
-            child.ChildAdded:Connect(function()
-                wait(0.1)
-                local npcs = getNPCList()
-                npcDropdown:SetValues(npcs)
-            end)
-            
-            child.ChildRemoved:Connect(function()
-                wait(0.1)
-                local npcs = getNPCList()
-                npcDropdown:SetValues(npcs)
-            end)
-        end
-    end)
-end
+CycleGroup:AddButton({
+    Text = "Cycle to Next Loot",
+    Func = function()
+        cycleLootTeleports()
+    end,
+    Tooltip = "Teleport to the next loot location in the cycle",
+})
 
-spawn(function()
-    wait(2)
-    local npcs = getNPCList()
-    npcDropdown:SetValues(npcs)
-    setupNPCAutoRefresh()
-end)
+CycleGroup:AddLabel("Loot Cycle Keybind"):AddKeyPicker("LootCycleKeybind", {
+    Text = "Loot Cycle Keybind",
+    NoUI = false,
+    Callback = function()
+        cycleLootTeleports()
+    end,
+})
 
 Library:OnUnload(function()
     stopTpWalk()
     stopNoclip()
     stopInfJump()
-    stopNPCTargeting()
-    stopTpAura()
     unloadF3X()
 end)
 
@@ -846,7 +561,7 @@ MenuGroup:AddToggle("KeybindMenuOpen", {
 
 MenuGroup:AddToggle("ShowCustomCursor", {
     Text = "Custom Cursor",
-    Default = true,
+    Default = false,
     Callback = function(Value)
         Library.ShowCustomCursor = Value
     end,
@@ -864,7 +579,7 @@ MenuGroup:AddDropdown("NotificationSide", {
 MenuGroup:AddDivider()
 
 MenuGroup:AddLabel("Menu bind")
-    :AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+    :AddKeyPicker("MenuKeybind", { Default = "N", NoUI = true, Text = "Menu keybind" })
 
 MenuGroup:AddButton("Unload", function()
     Library:Unload()
@@ -882,6 +597,5 @@ ThemeManager:SetFolder("ArchivedPrivate")
 SaveManager:SetFolder("ArchivedPrivate/main")
 
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
-ThemeManager:ApplyToTab(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
