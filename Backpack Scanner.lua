@@ -5,6 +5,7 @@ local viewing = nil
 local viewDied = nil
 local viewChanged = nil
 local espConnections = {}
+local playerFrames = {}
 
 local filteredItems = {
     "Fragment of silence",
@@ -233,207 +234,285 @@ screenGui.Name = "BackpackScannerGUI"
 screenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 750, 0, 550)
-mainFrame.Position = UDim2.new(0.5, -375, 0.5, -275)
-mainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+mainFrame.Size = UDim2.new(0, 800, 0, 600)
+mainFrame.Position = UDim2.new(0.5, -400, 0.5, -300)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
 mainFrame.BorderSizePixel = 0
 mainFrame.Parent = screenGui
 
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 25, 35)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(15, 15, 20))
+})
+gradient.Rotation = 45
+gradient.Parent = mainFrame
+
 local corner = Instance.new("UICorner")
-corner.CornerRadius = UDim.new(0, 12)
+corner.CornerRadius = UDim.new(0, 16)
 corner.Parent = mainFrame
 
 local titleBar = Instance.new("Frame")
-titleBar.Size = UDim2.new(1, 0, 0, 50)
-titleBar.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+titleBar.Size = UDim2.new(1, 0, 0, 60)
+titleBar.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 titleBar.BorderSizePixel = 0
 titleBar.Parent = mainFrame
 
+local titleGradient = Instance.new("UIGradient")
+titleGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(15, 15, 25)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(5, 5, 10))
+})
+titleGradient.Rotation = 90
+titleGradient.Parent = titleBar
+
 local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 12)
+titleCorner.CornerRadius = UDim.new(0, 16)
 titleCorner.Parent = titleBar
 
 local titleFix = Instance.new("Frame")
-titleFix.Size = UDim2.new(1, 0, 0, 25)
-titleFix.Position = UDim2.new(0, 0, 1, -25)
-titleFix.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+titleFix.Size = UDim2.new(1, 0, 0, 30)
+titleFix.Position = UDim2.new(0, 0, 1, -30)
+titleFix.BackgroundColor3 = Color3.fromRGB(10, 10, 15)
 titleFix.BorderSizePixel = 0
 titleFix.Parent = titleBar
 
 local titleLabel = Instance.new("TextLabel")
 titleLabel.Size = UDim2.new(1, -150, 1, 0)
-titleLabel.Position = UDim2.new(0, 15, 0, 0)
+titleLabel.Position = UDim2.new(0, 20, 0, 0)
 titleLabel.BackgroundTransparency = 1
 titleLabel.Text = "Backpack Scanner"
-titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleLabel.TextSize = 20
+titleLabel.TextColor3 = Color3.fromRGB(120, 180, 255)
+titleLabel.TextSize = 24
 titleLabel.Font = Enum.Font.GothamBold
 titleLabel.TextXAlignment = Enum.TextXAlignment.Left
 titleLabel.Parent = titleBar
 
 local closeButton = Instance.new("TextButton")
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0, 10)
-closeButton.BackgroundColor3 = Color3.fromRGB(255, 60, 60)
+closeButton.Size = UDim2.new(0, 40, 0, 40)
+closeButton.Position = UDim2.new(1, -50, 0, 10)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 80, 80)
 closeButton.Text = "×"
 closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextSize = 18
+closeButton.TextSize = 24
 closeButton.Font = Enum.Font.GothamBold
 closeButton.BorderSizePixel = 0
 closeButton.Parent = titleBar
 
+local closeBtnGradient = Instance.new("UIGradient")
+closeBtnGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 100, 100)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(220, 60, 60))
+})
+closeBtnGradient.Rotation = 90
+closeBtnGradient.Parent = closeButton
+
 local closeBtnCorner = Instance.new("UICorner")
-closeBtnCorner.CornerRadius = UDim.new(0, 8)
+closeBtnCorner.CornerRadius = UDim.new(0, 10)
 closeBtnCorner.Parent = closeButton
 
 local tabFrame = Instance.new("Frame")
-tabFrame.Size = UDim2.new(1, -20, 0, 40)
-tabFrame.Position = UDim2.new(0, 10, 0, 60)
+tabFrame.Size = UDim2.new(1, -40, 0, 50)
+tabFrame.Position = UDim2.new(0, 20, 0, 80)
 tabFrame.BackgroundTransparency = 1
 tabFrame.Parent = mainFrame
 
 local filteredTab = Instance.new("TextButton")
-filteredTab.Size = UDim2.new(0, 150, 1, 0)
-filteredTab.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
+filteredTab.Size = UDim2.new(0, 180, 1, 0)
+filteredTab.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
 filteredTab.Text = "Filtered Items"
 filteredTab.TextColor3 = Color3.fromRGB(255, 255, 255)
 filteredTab.TextSize = 16
-filteredTab.Font = Enum.Font.Gotham
+filteredTab.Font = Enum.Font.GothamBold
 filteredTab.BorderSizePixel = 0
 filteredTab.Parent = tabFrame
 
+local filteredTabGradient = Instance.new("UIGradient")
+filteredTabGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 140, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 100, 220))
+})
+filteredTabGradient.Rotation = 90
+filteredTabGradient.Parent = filteredTab
+
 local filteredTabCorner = Instance.new("UICorner")
-filteredTabCorner.CornerRadius = UDim.new(0, 8)
+filteredTabCorner.CornerRadius = UDim.new(0, 12)
 filteredTabCorner.Parent = filteredTab
 
 local fullBackpackTab = Instance.new("TextButton")
-fullBackpackTab.Size = UDim2.new(0, 150, 1, 0)
-fullBackpackTab.Position = UDim2.new(0, 160, 0, 0)
-fullBackpackTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+fullBackpackTab.Size = UDim2.new(0, 180, 1, 0)
+fullBackpackTab.Position = UDim2.new(0, 200, 0, 0)
+fullBackpackTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 fullBackpackTab.Text = "Full Backpacks"
-fullBackpackTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+fullBackpackTab.TextColor3 = Color3.fromRGB(180, 180, 180)
 fullBackpackTab.TextSize = 16
-fullBackpackTab.Font = Enum.Font.Gotham
+fullBackpackTab.Font = Enum.Font.GothamBold
 fullBackpackTab.BorderSizePixel = 0
 fullBackpackTab.Parent = tabFrame
 
+local fullTabGradient = Instance.new("UIGradient")
+fullTabGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 60)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 40))
+})
+fullTabGradient.Rotation = 90
+fullTabGradient.Parent = fullBackpackTab
+
 local fullTabCorner = Instance.new("UICorner")
-fullTabCorner.CornerRadius = UDim.new(0, 8)
+fullTabCorner.CornerRadius = UDim.new(0, 12)
 fullTabCorner.Parent = fullBackpackTab
 
 local contentFrame = Instance.new("Frame")
-contentFrame.Size = UDim2.new(1, -20, 1, -120)
-contentFrame.Position = UDim2.new(0, 10, 0, 110)
-contentFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+contentFrame.Size = UDim2.new(1, -40, 1, -150)
+contentFrame.Position = UDim2.new(0, 20, 0, 140)
+contentFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
 contentFrame.BorderSizePixel = 0
 contentFrame.Parent = mainFrame
 
+local contentGradient = Instance.new("UIGradient")
+contentGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(35, 35, 45)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(25, 25, 35))
+})
+contentGradient.Rotation = 180
+contentGradient.Parent = contentFrame
+
 local contentCorner = Instance.new("UICorner")
-contentCorner.CornerRadius = UDim.new(0, 8)
+contentCorner.CornerRadius = UDim.new(0, 12)
 contentCorner.Parent = contentFrame
 
 local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Size = UDim2.new(1, 0, 1, 0)
+scrollFrame.Size = UDim2.new(1, -20, 1, -20)
+scrollFrame.Position = UDim2.new(0, 10, 0, 10)
 scrollFrame.BackgroundTransparency = 1
-scrollFrame.ScrollBarThickness = 8
-scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 100, 100)
+scrollFrame.ScrollBarThickness = 12
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 120, 255)
 scrollFrame.Parent = contentFrame
 
 local listLayout = Instance.new("UIListLayout")
 listLayout.SortOrder = Enum.SortOrder.Name
-listLayout.Padding = UDim.new(0, 5)
+listLayout.Padding = UDim.new(0, 8)
 listLayout.Parent = scrollFrame
 
 local currentTab = "filtered"
 
 local function updateCanvasSize()
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end
+
+local function updateViewButtons()
+    for _, frame in pairs(playerFrames) do
+        if frame and frame.Parent and frame:FindFirstChild("ViewButton") then
+            local viewButton = frame.ViewButton
+            local player = Players:FindFirstChild(frame.Name:sub(13))
+            if player then
+                if viewing == player then
+                    viewButton.Text = "Unview"
+                    viewButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+                else
+                    viewButton.Text = "View"
+                    viewButton.BackgroundColor3 = Color3.fromRGB(60, 140, 255)
+                end
+            end
+        end
+    end
 end
 
 local function createPlayerEntry(player, items, stats)
     local playerFrame = Instance.new("Frame")
-    playerFrame.Size = UDim2.new(1, -10, 0, 100)
-    playerFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+    playerFrame.Name = "PlayerFrame_" .. player.Name
+    playerFrame.Size = UDim2.new(1, -20, 0, 120)
+    playerFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
     playerFrame.BorderSizePixel = 0
     playerFrame.Parent = scrollFrame
     
+    local playerGradient = Instance.new("UIGradient")
+    playerGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(45, 45, 60)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(35, 35, 50))
+    })
+    playerGradient.Rotation = 90
+    playerGradient.Parent = playerFrame
+    
     local playerCorner = Instance.new("UICorner")
-    playerCorner.CornerRadius = UDim.new(0, 6)
+    playerCorner.CornerRadius = UDim.new(0, 10)
     playerCorner.Parent = playerFrame
     
     local viewButton = Instance.new("TextButton")
-    viewButton.Size = UDim2.new(0, 60, 0, 25)
-    viewButton.Position = UDim2.new(1, -130, 0, 5)
-    viewButton.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
+    viewButton.Name = "ViewButton"
+    viewButton.Size = UDim2.new(0, 80, 0, 30)
+    viewButton.Position = UDim2.new(1, -170, 0, 10)
+    viewButton.BackgroundColor3 = Color3.fromRGB(60, 140, 255)
     viewButton.Text = "View"
     viewButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    viewButton.TextSize = 11
-    viewButton.Font = Enum.Font.Gotham
+    viewButton.TextSize = 12
+    viewButton.Font = Enum.Font.GothamBold
     viewButton.BorderSizePixel = 0
     viewButton.Parent = playerFrame
     
+    local viewBtnGradient = Instance.new("UIGradient")
+    viewBtnGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 160, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 120, 220))
+    })
+    viewBtnGradient.Rotation = 90
+    viewBtnGradient.Parent = viewButton
+    
     local viewBtnCorner = Instance.new("UICorner")
-    viewBtnCorner.CornerRadius = UDim.new(0, 4)
+    viewBtnCorner.CornerRadius = UDim.new(0, 8)
     viewBtnCorner.Parent = viewButton
     
     local espButton = Instance.new("TextButton")
-    espButton.Size = UDim2.new(0, 60, 0, 25)
-    espButton.Position = UDim2.new(1, -65, 0, 5)
-    espButton.BackgroundColor3 = Color3.fromRGB(120, 70, 200)
+    espButton.Size = UDim2.new(0, 80, 0, 30)
+    espButton.Position = UDim2.new(1, -80, 0, 10)
+    espButton.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
     espButton.Text = "ESP"
     espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    espButton.TextSize = 11
-    espButton.Font = Enum.Font.Gotham
+    espButton.TextSize = 12
+    espButton.Font = Enum.Font.GothamBold
     espButton.BorderSizePixel = 0
     espButton.Parent = playerFrame
     
+    local espBtnGradient = Instance.new("UIGradient")
+    espBtnGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(170, 100, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 60, 220))
+    })
+    espBtnGradient.Rotation = 90
+    espBtnGradient.Parent = espButton
+    
     local espBtnCorner = Instance.new("UICorner")
-    espBtnCorner.CornerRadius = UDim.new(0, 4)
+    espBtnCorner.CornerRadius = UDim.new(0, 8)
     espBtnCorner.Parent = espButton
     
-    local unviewBtn = Instance.new("TextButton")
-    unviewBtn.Size = UDim2.new(0, 60, 0, 25)
-    unviewBtn.Position = UDim2.new(1, -130, 0, 35)
-    unviewBtn.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    unviewBtn.Text = "Unview"
-    unviewBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    unviewBtn.TextSize = 11
-    unviewBtn.Font = Enum.Font.Gotham
-    unviewBtn.BorderSizePixel = 0
-    unviewBtn.Parent = playerFrame
-    
-    local unviewBtnCorner = Instance.new("UICorner")
-    unviewBtnCorner.CornerRadius = UDim.new(0, 4)
-    unviewBtnCorner.Parent = unviewBtn
-    
     local playerName = Instance.new("TextLabel")
-    playerName.Size = UDim2.new(0.3, -140, 0, 25)
-    playerName.Position = UDim2.new(0, 10, 0, 5)
+    playerName.Size = UDim2.new(0.4, -180, 0, 30)
+    playerName.Position = UDim2.new(0, 15, 0, 10)
     playerName.BackgroundTransparency = 1
     playerName.Text = player.Name
-    playerName.TextColor3 = Color3.fromRGB(255, 255, 100)
-    playerName.TextSize = 16
+    playerName.TextColor3 = Color3.fromRGB(120, 200, 255)
+    playerName.TextSize = 18
     playerName.Font = Enum.Font.GothamBold
     playerName.TextXAlignment = Enum.TextXAlignment.Left
     playerName.Parent = playerFrame
     
     local statsLabel = Instance.new("TextLabel")
-    statsLabel.Size = UDim2.new(0.3, -140, 0, 20)
-    statsLabel.Position = UDim2.new(0, 10, 0, 30)
+    statsLabel.Size = UDim2.new(0.4, -180, 0, 25)
+    statsLabel.Position = UDim2.new(0, 15, 0, 40)
     statsLabel.BackgroundTransparency = 1
     statsLabel.Text = "Ahn: " .. (stats.Ahn or 0) .. " | Singularity: " .. (stats.Singularity or 0)
-    statsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    statsLabel.TextSize = 12
-    statsLabel.Font = Enum.Font.Gotham
+    statsLabel.TextColor3 = Color3.fromRGB(255, 215, 100)
+    statsLabel.TextSize = 14
+    statsLabel.Font = Enum.Font.GothamBold
     statsLabel.TextXAlignment = Enum.TextXAlignment.Left
     statsLabel.Parent = playerFrame
     
     local itemsLabel = Instance.new("TextLabel")
-    itemsLabel.Size = UDim2.new(0.7, -140, 1, -10)
-    itemsLabel.Position = UDim2.new(0.3, 10, 0, 5)
+    itemsLabel.Size = UDim2.new(0.6, -190, 1, -20)
+    itemsLabel.Position = UDim2.new(0.4, 15, 0, 10)
     itemsLabel.BackgroundTransparency = 1
-    itemsLabel.Text = items
-    itemsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    itemsLabel.Text = items == "" and "No items found" or items
+    itemsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
     itemsLabel.TextSize = 12
     itemsLabel.Font = Enum.Font.Gotham
     itemsLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -441,32 +520,38 @@ local function createPlayerEntry(player, items, stats)
     itemsLabel.TextWrapped = true
     itemsLabel.Parent = playerFrame
     
-    viewButton.MouseButton1Click:Connect(function()
-        startViewing(player)
-    end)
+    if viewing == player then
+        viewButton.Text = "Unview"
+        viewButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+    end
     
-    unviewBtn.MouseButton1Click:Connect(function()
+    if espConnections[player.Name] then
+        espButton.Text = "UnESP"
+        espButton.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
+    end
+    
+    viewButton.MouseButton1Click:Connect(function()
         if viewing == player then
             stopViewing()
+        else
+            startViewing(player)
         end
+        updateViewButtons()
     end)
     
     espButton.MouseButton1Click:Connect(function()
         if espConnections[player.Name] then
             removeESP(player)
             espButton.Text = "ESP"
-            espButton.BackgroundColor3 = Color3.fromRGB(120, 70, 200)
+            espButton.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
         else
             createESP(player)
             espButton.Text = "UnESP"
-            espButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
+            espButton.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
         end
     end)
     
-    if espConnections[player.Name] then
-        espButton.Text = "UnESP"
-        espButton.BackgroundColor3 = Color3.fromRGB(200, 70, 70)
-    end
+    playerFrames[player.Name] = playerFrame
     
     return playerFrame
 end
@@ -477,12 +562,13 @@ local function updateDisplay()
             child:Destroy()
         end
     end
+    playerFrames = {}
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= Players.LocalPlayer then
             local items, stats = scanPlayerBackpack(player, currentTab == "filtered")
             if items ~= "" or currentTab == "full" then
-                createPlayerEntry(player, items == "" and "No items found" or items, stats)
+                createPlayerEntry(player, items, stats)
             end
         end
     end
@@ -492,15 +578,19 @@ end
 
 filteredTab.MouseButton1Click:Connect(function()
     currentTab = "filtered"
-    filteredTab.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
-    fullBackpackTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    filteredTab.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
+    filteredTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    fullBackpackTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    fullBackpackTab.TextColor3 = Color3.fromRGB(180, 180, 180)
     updateDisplay()
 end)
 
 fullBackpackTab.MouseButton1Click:Connect(function()
     currentTab = "full"
-    fullBackpackTab.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
-    filteredTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    fullBackpackTab.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
+    fullBackpackTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    filteredTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    filteredTab.TextColor3 = Color3.fromRGB(180, 180, 180)
     updateDisplay()
 end)
 
