@@ -339,7 +339,7 @@ InfJumpToggle:AddKeyPicker("InfJumpKeybind", {
     end,
 })
 
-local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Tools", "wrench")
+local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
 
 ToolsGroupBox:AddButton({
     Text = "Load F3X",
@@ -352,6 +352,74 @@ ToolsGroupBox:AddButton({
         })
     end,
     Tooltip = "Loads F3X Building Tools",
+})
+
+ToolsGroupBox:AddButton({
+    Text = "Backpack Scanner",
+    Func = function()
+        local success, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/Backpack%20Scanner.lua"))()
+        end)
+        
+        if success then
+            Library:Notify({
+                Title = "Backpack Scanner Loaded",
+                Description = "Backpack Scanner has been loaded successfully!",
+                Time = 3,
+            })
+        else
+            Library:Notify({
+                Title = "Error",
+                Description = "Failed to load Backpack Scanner",
+                Time = 3,
+            })
+        end
+    end,
+    Tooltip = "Loads Backpack Scanner",
+})
+
+ToolsGroupBox:AddButton({
+    Text = "Equip Accessories",
+    Func = function()
+        local success = pcall(function()
+            local ReplicatedStorage = game:GetService("ReplicatedStorage")
+            local AddAccessory = ReplicatedStorage.Events.AddAccessory
+            local AccessoriesPath = ReplicatedStorage.Assets.Accessories
+            
+            local Hood = AccessoriesPath.Hats.Hood
+            AddAccessory:FireServer("Hats", Hood)
+            
+            local RememberanceOfFellBullet = AccessoriesPath.Face["Rememberance Of Fell Bullet"]
+            AddAccessory:FireServer("Face", RememberanceOfFellBullet)
+            
+            local WaxenWing = AccessoriesPath.Torso["Waxen Wing"]
+            AddAccessory:FireServer("Torso", WaxenWing)
+            
+            local SoulKingsCloak = AccessoriesPath.Arms["Soul Kings Cloak"]
+            AddAccessory:FireServer("Arms", SoulKingsCloak)
+            
+            local TwinhookStraps = AccessoriesPath.Legs["Twinhook Straps"]
+            AddAccessory:FireServer("Legs", TwinhookStraps)
+            
+            local MementoMori = AccessoriesPath.Lights["Memento Mori"]
+            AddAccessory:FireServer("Lights", MementoMori)
+        end)
+        
+        if success then
+            Library:Notify({
+                Title = "Accessories Equipped",
+                Description = "All accessories have been equipped successfully!",
+                Time = 3,
+            })
+        else
+            Library:Notify({
+                Title = "Error",
+                Description = "Failed to equip accessories",
+                Time = 3,
+            })
+        end
+    end,
+    Tooltip = "Equips your preset accessories",
 })
 
 local TeleportGroupBox = Tabs.Main:AddLeftGroupbox("Teleports", "map-pin")
