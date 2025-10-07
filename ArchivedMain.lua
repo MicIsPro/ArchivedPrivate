@@ -453,6 +453,7 @@ local teleportPositions = {
     {name = "Syntheza", pos = Vector3.new(-658, -8, 971)},
     {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
     {name = "Hana", pos = Vector3.new(248, 28, 587)},
+    {name = "Subway", pos = Vector3.new(48, 0, 681)},
     {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
     {name = "Warp Train", pos = Vector3.new(620, -7, 408)},
 }
@@ -692,5 +693,6 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
+
 
 
