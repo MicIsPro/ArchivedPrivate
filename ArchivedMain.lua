@@ -358,7 +358,7 @@ ToolsGroupBox:AddButton({
     Text = "Backpack Scanner",
     Func = function()
         local success, err = pcall(function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/Backpack%20Scanner.lua"))()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/BackpackScanner.lua"))()
         end)
         
         if success then
@@ -376,6 +376,30 @@ ToolsGroupBox:AddButton({
         end
     end,
     Tooltip = "Loads Backpack Scanner",
+})
+
+ToolsGroupBox:AddButton({
+    Text = "Infinite Yield",
+    Func = function()
+        local success, err = pcall(function()
+            loadstring(game:HttpGet("https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source"))()
+        end)
+        
+        if success then
+            Library:Notify({
+                Title = "Infinite Yield Loaded",
+                Description = "Infinite Yield has been loaded succesfully!",
+                Time = 3,
+            })
+        else
+            Library:Notify({
+                Title = "Error",
+                Description = "Failed to load Inf Yield",
+                Time = 3,
+            })
+        end
+    end,
+    Tooltip = "Loads inf yield",
 })
 
 ToolsGroupBox:AddButton({
@@ -668,4 +692,5 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
+
 
