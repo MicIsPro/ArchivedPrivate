@@ -426,6 +426,7 @@ local TeleportGroupBox = Tabs.Main:AddLeftGroupbox("Teleports", "map-pin")
 
 local teleportPositions = {
     {name = "Bar", pos = Vector3.new(441, -7, 438)},
+    {name = "Syntheza", pos = Vector3.new(-658, -8, 971)},
     {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
     {name = "Hana", pos = Vector3.new(248, 28, 587)},
     {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
@@ -667,3 +668,4 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
+
