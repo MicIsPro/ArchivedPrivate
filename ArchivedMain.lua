@@ -452,10 +452,7 @@ local teleportPositions = {
     {name = "Bar", pos = Vector3.new(441, -7, 438)},
     {name = "Syntheza", pos = Vector3.new(-658, -8, 971)},
     {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
-    {name = "Hana", pos = Vector3.new(248, 28, 587)},
     {name = "Subway", pos = Vector3.new(48, 0, 681)},
-    {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
-    {name = "Warp Train", pos = Vector3.new(620, -7, 408)},
 }
 
 for _, teleport in ipairs(teleportPositions) do
@@ -468,6 +465,36 @@ for _, teleport in ipairs(teleportPositions) do
     })
 end
 
+local QuestGroup = Tabs.Main:AddLeftGroupbox("Quest Tps", "map-pin")
+local questtps = {
+    {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
+    {name = "Warp Train", pos = Vector3.new(620, -7, 408)},
+}
+for _, teleport in ipairs(questtps) do
+QuestGroup:AddButton({
+    Text = teleport.name,
+    Func = function()
+    teleportToPosition(teleport.pos)
+    end,
+    Tooltip = "Teleport to " .. teleport.name,
+})
+end
+local GradeExamGroup = Tabs.Main:AddLeftGroupbox("Grade Exam", "graduation-cap")
+
+local gradeExamTeleports = {
+    {name = "Hana", pos = Vector3.new(248, 28, 587)},
+    {name = "Parkour Start", pos = Vector3.new(2643, 2455, 3059)},
+    {name = "Parkour End", pos = Vector3.new(2643, 2455, 3059)},
+}
+for _, teleport in ipairs(gradeExamTeleports) do
+    GradeExamGroup:AddButton({
+        Text = teleport.name,
+        Func = function()
+            teleportToPosition(teleport.pos)
+        end,
+        Tooltip = "Teleport to " .. teleport.name,
+    })
+end
 local ServerGroupBox = Tabs.Main:AddRightGroupbox("Server Teleports", "server")
 
 ServerGroupBox:AddButton({
@@ -693,6 +720,5 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
-
 
 
