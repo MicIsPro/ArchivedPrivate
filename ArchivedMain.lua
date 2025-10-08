@@ -345,8 +345,8 @@ InfJumpToggle:AddKeyPicker("InfJumpKeybind", {
     Callback = function()
         InfJumpToggle:SetValue(not Toggles.InfJump.Value)
     end,
-})MainGroupBox:AddDivider()
-
+})
+MainGroupBox:AddDivider()
 local BloodRemoverToggle = MainGroupBox:AddToggle("BloodRemover", {
     Text = "Remove Blood",
     Default = false,
@@ -357,13 +357,13 @@ local BloodRemoverToggle = MainGroupBox:AddToggle("BloodRemover", {
             
             if thrown then
                 _G.bloodConnection = thrown.ChildAdded:Connect(function(child)
-                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" then
+                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" or child.Name == "BloodDrop" then
                         child:Destroy()
                     end
                 end)
                 
                 for _, child in pairs(thrown:GetChildren()) do
-                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" then
+                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" or child.Name == "BloodDrop" then
                         child:Destroy()
                     end
                 end
