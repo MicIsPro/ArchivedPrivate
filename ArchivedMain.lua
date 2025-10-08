@@ -87,6 +87,15 @@ local function teleportToPosition(position)
     local tween = TweenService:Create(humanoidRootPart, tweenInfo, {CFrame = CFrame.new(position)})
     tween:Play()
 end
+local function instantTeleport(position)
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+    if not humanoidRootPart then return end
+    
+    humanoidRootPart.CFrame = CFrame.new(position)
+end
 
 local function startTpWalk()
     tpwalking = true
@@ -116,18 +125,17 @@ end
 
 local function startNoclip()
     noclipping = true
-    local character = LocalPlayer.Character
-    if not character then return end
-
+    wait(0.1)
+    
     if noclipLoop then
         noclipLoop:Disconnect()
     end
 
     noclipLoop = RunService.Stepped:Connect(function()
-        if noclipping and character then
-            for _, part in pairs(character:GetDescendants()) do
-                if part:IsA("BasePart") and part.CanCollide then
-                    part.CanCollide = false
+        if noclipping == true and LocalPlayer.Character ~= nil then
+            for _, child in pairs(LocalPlayer.Character:GetDescendants()) do
+                if child:IsA("BasePart") and child.CanCollide == true then
+                    child.CanCollide = false
                 end
             end
         end
@@ -143,9 +151,9 @@ local function stopNoclip()
     
     local character = LocalPlayer.Character
     if character then
-        for _, part in pairs(character:GetDescendants()) do
-            if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
-                part.CanCollide = true
+        for _, child in pairs(character:GetDescendants()) do
+            if child:IsA("BasePart") and child.Parent:IsA("Accessory") == false and child.Parent:IsA("Model") == false and child.Name ~= "HumanoidRootPart" then
+                child.CanCollide = true
             end
         end
     end
@@ -538,8 +546,17 @@ ServerGroupBox:AddButton({
 
 local GradeExamGroup = Tabs.Main:AddRightGroupbox("Grade Exam", "graduation-cap")
 
+GradeExamGroup:AddButton({
+    Text = "Hana",
+    Func = function()
+        instantTeleport(Vector3.new(248, 28, 587))
+    end,
+    Tooltip = "Teleport to Hana",
+})
+
+GradeExamGroup:AddDivider()
+
 local gradeExamTeleports = {
-    {name = "Hana", pos = Vector3.new(248, 28, 587)},
     {name = "Parkour Start", pos = Vector3.new(2643, 2455, 3059)},
     {name = "Parkour End", pos = Vector3.new(2643, 2455, 3059)},
 }
@@ -547,7 +564,7 @@ for _, teleport in ipairs(gradeExamTeleports) do
     GradeExamGroup:AddButton({
         Text = teleport.name,
         Func = function()
-            teleportToPosition(teleport.pos)
+            instantTeleport(teleport.pos)
         end,
         Tooltip = "Teleport to " .. teleport.name,
     })
