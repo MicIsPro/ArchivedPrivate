@@ -720,5 +720,14 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
+-- Fall dmg disabler
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local events = ReplicatedStorage:WaitForChild("Events", 10)
+if events then
+    local fallDamageRemote = events:WaitForChild("FallDamage", 10)
+    if fallDamageRemote then
+        fallDamageRemote:Destroy()
+    end
+end
 
