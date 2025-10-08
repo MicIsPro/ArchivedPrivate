@@ -337,6 +337,44 @@ InfJumpToggle:AddKeyPicker("InfJumpKeybind", {
     Callback = function()
         InfJumpToggle:SetValue(not Toggles.InfJump.Value)
     end,
+})MainGroupBox:AddDivider()
+
+local BloodRemoverToggle = MainGroupBox:AddToggle("BloodRemover", {
+    Text = "Remove Blood",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            local workspace = game:GetService("Workspace")
+            local thrown = workspace:WaitForChild("Thrown", 10)
+            
+            if thrown then
+                _G.bloodConnection = thrown.ChildAdded:Connect(function(child)
+                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" then
+                        child:Destroy()
+                    end
+                end)
+                
+                for _, child in pairs(thrown:GetChildren()) do
+                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" then
+                        child:Destroy()
+                    end
+                end
+            end
+        else
+            if _G.bloodConnection then
+                _G.bloodConnection:Disconnect()
+                _G.bloodConnection = nil
+            end
+        end
+    end,
+})
+
+BloodRemoverToggle:AddKeyPicker("BloodRemoverKeybind", {
+    Text = "Remove Blood",
+    Mode = "Toggle",
+    Callback = function()
+        BloodRemoverToggle:SetValue(not Toggles.BloodRemover.Value)
+    end,
 })
 
 local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
@@ -479,22 +517,7 @@ QuestGroup:AddButton({
     Tooltip = "Teleport to " .. teleport.name,
 })
 end
-local GradeExamGroup = Tabs.Main:AddLeftGroupbox("Grade Exam", "graduation-cap")
 
-local gradeExamTeleports = {
-    {name = "Hana", pos = Vector3.new(248, 28, 587)},
-    {name = "Parkour Start", pos = Vector3.new(2643, 2455, 3059)},
-    {name = "Parkour End", pos = Vector3.new(2643, 2455, 3059)},
-}
-for _, teleport in ipairs(gradeExamTeleports) do
-    GradeExamGroup:AddButton({
-        Text = teleport.name,
-        Func = function()
-            teleportToPosition(teleport.pos)
-        end,
-        Tooltip = "Teleport to " .. teleport.name,
-    })
-end
 local ServerGroupBox = Tabs.Main:AddRightGroupbox("Server Teleports", "server")
 
 ServerGroupBox:AddButton({
@@ -512,6 +535,23 @@ ServerGroupBox:AddButton({
     end,
     Tooltip = "Teleport to Normal Server",
 })
+
+local GradeExamGroup = Tabs.Main:AddRightGroupbox("Grade Exam", "graduation-cap")
+
+local gradeExamTeleports = {
+    {name = "Hana", pos = Vector3.new(248, 28, 587)},
+    {name = "Parkour Start", pos = Vector3.new(2643, 2455, 3059)},
+    {name = "Parkour End", pos = Vector3.new(2643, 2455, 3059)},
+}
+for _, teleport in ipairs(gradeExamTeleports) do
+    GradeExamGroup:AddButton({
+        Text = teleport.name,
+        Func = function()
+            teleportToPosition(teleport.pos)
+        end,
+        Tooltip = "Teleport to " .. teleport.name,
+    })
+end
 
 local LCorpMainGroup = Tabs.LCorp:AddLeftGroupbox("Main Areas", "building")
 
