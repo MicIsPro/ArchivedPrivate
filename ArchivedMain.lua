@@ -574,6 +574,7 @@ local LCorpMainGroup = Tabs.LCorp:AddLeftGroupbox("Main Areas", "building")
 
 local mainAreas = {
     {name = "Main", pos = Vector3.new(-6, 980, 198)},
+    {name = "Boss Arena", pos = Vector3.new(50, 980, 367)},
     {name = "Storage", pos = Vector3.new(269, 980, -212)},
     {name = "Extraction Machine", pos = Vector3.new(132, 980, -31)},
     {name = "Exit", pos = Vector3.new(88, 980, -84)},
