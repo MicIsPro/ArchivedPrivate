@@ -558,7 +558,7 @@ GradeExamGroup:AddDivider()
 
 local gradeExamTeleports = {
     {name = "Parkour Start", pos = Vector3.new(2643, 2455, 3059)},
-    {name = "Parkour End", pos = Vector3.new(2651, 2455, 2556)},
+    {name = "Parkour End", pos = Vector3.new(2649, 2455, 2555)},
 }
 for _, teleport in ipairs(gradeExamTeleports) do
     GradeExamGroup:AddButton({
@@ -787,5 +787,3 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
-
-
