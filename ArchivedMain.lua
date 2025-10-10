@@ -474,7 +474,11 @@ ToolsGroupBox:AddButton({
             local MementoMori = AccessoriesPath.Lights["Memento Mori"]
             AddAccessory:FireServer("Lights", MementoMori)
         end)
-        
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UpdateHairCut = ReplicatedStorage.Events.UpdateHairCut
+UpdateHairCut:FireServer(
+    ",15986447340,13619384229 ,,"
+)
         if success then
             Library:Notify({
                 Title = "Accessories Equipped",
