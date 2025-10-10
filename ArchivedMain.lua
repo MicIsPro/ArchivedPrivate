@@ -459,6 +459,17 @@ BodyCollectorToggle:AddKeyPicker("BodyCollectorKeybind", {
     end,
 })
 
+MainGroupBox:AddDivider()
+MainGroupBox:AddLabel("Parry Keybind"):AddKeyPicker("ParryKeybind", {
+    Text = "Parry",
+    NoUI = false,
+    Callback = function()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local ParryActivate = ReplicatedStorage.Events.ParryActivate
+        ParryActivate:FireServer()
+    end,
+})
+
 local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
 
 ToolsGroupBox:AddButton({
