@@ -385,6 +385,80 @@ BloodRemoverToggle:AddKeyPicker("BloodRemoverKeybind", {
     end,
 })
 
+local BodyCollectorToggle = MainGroupBox:AddToggle("BodyCollector", {
+    Text = "Auto-Grip",
+    Default = false,
+    Callback = function(Value)
+        _G.collecting = Value
+        
+        if Value then
+            task.spawn(function()
+                local Grip = game:GetService("ReplicatedStorage").Events.Grip
+                local processedTargets = {}
+                local RANGE = 20
+                
+                local function findDeadNPC()
+                    local alive = workspace:FindFirstChild("Alive")
+                    if not alive then return nil end
+                    
+                    local character = LocalPlayer.Character
+                    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+                    local hrp = character.HumanoidRootPart
+                    
+                    for _, entity in pairs(alive:GetChildren()) do
+                        if entity ~= LocalPlayer.Character and entity:FindFirstChild("Humanoid") and not processedTargets[entity] then
+                            local humanoid = entity:FindFirstChild("Humanoid")
+                            if humanoid.Health >= 0 and humanoid.Health <= 2 then
+                                local player = Players:GetPlayerFromCharacter(entity)
+                                if not player then
+                                    local targetHRP = entity:FindFirstChild("HumanoidRootPart") or entity:FindFirstChild("Torso")
+                                    if targetHRP then
+                                        local distance = (hrp.Position - targetHRP.Position).Magnitude
+                                        if distance <= RANGE then
+                                            return entity
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                    return nil
+                end
+                
+                while _G.collecting do
+                    local target = findDeadNPC()
+                    
+                    if target then
+                        local character = LocalPlayer.Character
+                        
+                        if character and character:FindFirstChild("HumanoidRootPart") then
+                            for i = 1, 3 do
+                                Grip:FireServer(target)
+                                wait(0.05)
+                            end
+                            
+                            processedTargets[target] = true
+                            wait(0.1)
+                        end
+                    else
+                        wait(0.5)
+                    end
+                    
+                    wait(0.1)
+                end
+            end)
+        end
+    end,
+})
+
+BodyCollectorToggle:AddKeyPicker("BodyCollectorKeybind", {
+    Text = "Auto-Grip",
+    Mode = "Toggle",
+    Callback = function()
+        BodyCollectorToggle:SetValue(not Toggles.BodyCollector.Value)
+    end,
+})
+
 local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
 
 ToolsGroupBox:AddButton({
