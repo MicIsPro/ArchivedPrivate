@@ -588,6 +588,7 @@ local teleportPositions = {
     {name = "Syntheza", pos = Vector3.new(-658, -8, 971)},
     {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
     {name = "Subway", pos = Vector3.new(48, 0, 681)},
+    {name = "Dumpster Guy", pos = Vector3.new(298, 64, -149)}
 }
 
 for _, teleport in ipairs(teleportPositions) do
@@ -678,6 +679,7 @@ local function autoDrop()
         "Book Of a Grade 7 Fixer",
         "Book Of Zwei Association",
         "Book Of Hana Association",
+        "Book Of Stray Dogs",
         "Scrap Metal",
         "Gun Parts",
   
