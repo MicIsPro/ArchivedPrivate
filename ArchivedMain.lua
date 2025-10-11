@@ -659,6 +659,84 @@ for _, teleport in ipairs(gradeExamTeleports) do
     })
 end
 
+
+local autoDropActive = false
+
+local function autoDrop()
+    local character = LocalPlayer.Character
+    if not character then return end
+    
+    local backpack = LocalPlayer.Backpack
+    local itemsToDrop = {
+        "Makeshift Handle",
+        "Rope",
+        "Low Quality Blade",
+        "Book",
+        "Organs",
+        "Wiring",
+        "Book Of a Grade 9 Fixer",
+        "Book Of a Grade 7 Fixer",
+        "Scrap Metal",
+        "Gun Parts",
+        "Book Of Zwei Association",
+    }
+    
+    local function findAllItems(itemName)
+        local items = {}
+        
+        for _, item in pairs(character:GetChildren()) do
+            if item:IsA("Tool") and item.Name == itemName then
+                table.insert(items, item)
+            end
+        end
+        
+        for _, item in pairs(backpack:GetChildren()) do
+            if item:IsA("Tool") and item.Name == itemName then
+                table.insert(items, item)
+            end
+        end
+        
+        return items
+    end
+    
+    local DropItem = game:GetService("ReplicatedStorage").Events.DropItem
+    for _, itemName in ipairs(itemsToDrop) do
+        local items = findAllItems(itemName)
+        
+        for _, item in ipairs(items) do
+            DropItem:FireServer(item)
+            wait(0)
+        end
+    end
+end
+
+local DropTab = Window:AddTab("Auto Drop", "trash-2")
+local DropGroupBox = DropTab:AddLeftGroupbox("Auto Drop", "trash-2")
+
+local AutoDropToggle = DropGroupBox:AddToggle("AutoDropToggle", {
+    Text = "Auto Drop",
+    Default = false,
+    Callback = function(Value)
+        autoDropActive = Value
+        if Value then
+            task.spawn(function()
+                while autoDropActive do
+                    autoDrop()
+                    wait(1)
+                end
+            end)
+        end
+    end,
+})
+
+AutoDropToggle:AddKeyPicker("AutoDropKeybind", {
+    Text = "Auto Drop",
+    Mode = "Toggle",
+    Callback = function()
+        AutoDropToggle:SetValue(not Toggles.AutoDropToggle.Value)
+    end,
+})
+
 local LCorpMainGroup = Tabs.LCorp:AddLeftGroupbox("Main Areas", "building")
 
 local mainAreas = {
