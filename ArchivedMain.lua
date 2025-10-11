@@ -676,9 +676,11 @@ local function autoDrop()
         "Wiring",
         "Book Of a Grade 9 Fixer",
         "Book Of a Grade 7 Fixer",
+        "Book Of Zwei Association",
+        "Book Of Hana Association",
         "Scrap Metal",
         "Gun Parts",
-        "Book Of Zwei Association",
+  
     }
     
     local function findAllItems(itemName)
