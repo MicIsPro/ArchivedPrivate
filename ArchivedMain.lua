@@ -346,6 +346,52 @@ InfJumpToggle:AddKeyPicker("InfJumpKeybind", {
         InfJumpToggle:SetValue(not Toggles.InfJump.Value)
     end,
 })
+
+local instantPPActive = false
+local PromptButtonHoldBegan = nil
+
+local function startInstantPP()
+    if fireproximityprompt then
+        PromptButtonHoldBegan = game:GetService("ProximityPromptService").PromptButtonHoldBegan:Connect(function(prompt)
+            fireproximityprompt(prompt)
+        end)
+    else
+        Library:Notify({
+            Title = "Error",
+            Description = "Your exploit does not support fireproximityprompt",
+            Time = 3,
+        })
+    end
+end
+
+local function stopInstantPP()
+    if PromptButtonHoldBegan ~= nil then
+        PromptButtonHoldBegan:Disconnect()
+        PromptButtonHoldBegan = nil
+    end
+end
+
+local InstantPPToggle = MainGroupBox:AddToggle("InstantPP", {
+    Text = "Instant Proximity Prompts",
+    Default = false,
+    Callback = function(Value)
+        instantPPActive = Value
+        if Value then
+            startInstantPP()
+        else
+            stopInstantPP()
+        end
+    end,
+})
+
+InstantPPToggle:AddKeyPicker("InstantPPKeybind", {
+    Text = "Instant PP",
+    Mode = "Toggle",
+    Callback = function()
+        InstantPPToggle:SetValue(not Toggles.InstantPP.Value)
+    end,
+})
+
 MainGroupBox:AddDivider()
 local BloodRemoverToggle = MainGroupBox:AddToggle("BloodRemover", {
     Text = "Remove Blood",
