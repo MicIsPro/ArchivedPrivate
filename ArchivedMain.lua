@@ -72,7 +72,9 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
+    NPCTargetter = Window:AddTab("NPC Targetter", "target"),
     LCorp = Window:AddTab("L.Corp", "building"),
+    AutoDrop = Window:AddTab("Auto Drop", "trash-2"),
     ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
 }
 
@@ -725,6 +727,7 @@ local function autoDrop()
         "Book Of a Grade 7 Fixer",
         "Book Of Zwei Association",
         "Book Of Hana Association",
+        "Book Of Shi Association",
         "Book Of Stray Dogs",
         "Scrap Metal",
         "Gun Parts",
@@ -760,8 +763,7 @@ local function autoDrop()
     end
 end
 
-local DropTab = Window:AddTab("Auto Drop", "trash-2")
-local DropGroupBox = DropTab:AddLeftGroupbox("Auto Drop", "trash-2")
+local DropGroupBox = Tabs.AutoDrop:AddLeftGroupbox("Auto Drop", "trash-2")
 
 local AutoDropToggle = DropGroupBox:AddToggle("AutoDropToggle", {
     Text = "Auto Drop",
@@ -938,6 +940,121 @@ CycleGroup:AddLabel("Loot Cycle Keybind"):AddKeyPicker("LootCycleKeybind", {
     end,
 })
 
+local NPCTargetterGroup = Tabs.NPCTargetter:AddLeftGroupbox("Loop Teleport", "crosshair")
+
+local npcTargetEnabled = false
+local npcTargetLoop
+local npcTargetPlate = nil
+local npcTargetDistance = 0
+
+local function findNearestNPC()
+    local alive = workspace:FindFirstChild("Alive")
+    if not alive then return nil end
+    
+    local character = LocalPlayer.Character
+    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+    local hrp = character.HumanoidRootPart
+    
+    local nearestNPC = nil
+    local shortestDistance = math.huge
+    
+    for _, entity in pairs(alive:GetChildren()) do
+        if entity ~= LocalPlayer.Character and entity:FindFirstChild("Humanoid") then
+            local humanoid = entity:FindFirstChild("Humanoid")
+            if humanoid.Health > 2 then
+                local player = Players:GetPlayerFromCharacter(entity)
+                if not player then
+                    local npcHRP = entity:FindFirstChild("HumanoidRootPart") or entity:FindFirstChild("Torso")
+                    if npcHRP then
+                        local dist = (hrp.Position - npcHRP.Position).Magnitude
+                        if dist < shortestDistance then
+                            shortestDistance = dist
+                            nearestNPC = entity
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    return nearestNPC
+end
+
+local function createNPCTargetPlate()
+    if npcTargetPlate then npcTargetPlate:Destroy() end
+    
+    npcTargetPlate = Instance.new("Part")
+    npcTargetPlate.Name = "NPCTargetPlate"
+    npcTargetPlate.Shape = Enum.PartType.Block
+    npcTargetPlate.Size = Vector3.new(8, 0.5, 8)
+    npcTargetPlate.CanCollide = true
+    npcTargetPlate.Anchored = true
+    npcTargetPlate.CanQuery = false
+    npcTargetPlate.Material = Enum.Material.ForceField
+    npcTargetPlate.Transparency = 0.3
+    npcTargetPlate.TopSurface = Enum.SurfaceType.Smooth
+    npcTargetPlate.BottomSurface = Enum.SurfaceType.Smooth
+    npcTargetPlate.Parent = workspace
+end
+
+local NPCTargetToggle = NPCTargetterGroup:AddToggle("NPCTargetToggle", {
+    Text = "Loop Teleport",
+    Default = false,
+    Callback = function(Value)
+        npcTargetEnabled = Value
+        if Value then
+            createNPCTargetPlate()
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            
+            local renderConnection = RunService.RenderStepped:Connect(function()
+                if npcTargetEnabled and npcTargetPlate then
+                    local targetNPC = findNearestNPC()
+                    if targetNPC then
+                        local npcHRP = targetNPC:FindFirstChild("HumanoidRootPart") or targetNPC:FindFirstChild("Torso")
+                        if npcHRP then
+                            local npcPos = npcHRP.Position
+                            local belowPos = Vector3.new(npcPos.X, npcPos.Y - npcTargetDistance, npcPos.Z)
+                            humanoidRootPart.CFrame = CFrame.new(belowPos)
+                            npcTargetPlate.Position = Vector3.new(belowPos.X, belowPos.Y - 2.5, belowPos.Z)
+                        end
+                    end
+                end
+            end)
+            
+            npcTargetLoop = renderConnection
+        else
+            if npcTargetLoop then
+                task.cancel(npcTargetLoop)
+            end
+            if npcTargetPlate then
+                npcTargetPlate:Destroy()
+                npcTargetPlate = nil
+            end
+        end
+    end,
+})
+
+NPCTargetToggle:AddKeyPicker("NPCTargetKeybind", {
+    Text = "Loop Teleport",
+    Mode = "Toggle",
+    Callback = function()
+        NPCTargetToggle:SetValue(not Toggles.NPCTargetToggle.Value)
+    end,
+})
+
+NPCTargetterGroup:AddSlider("NPCDistanceSlider", {
+    Text = "Distance Below",
+    Default = 0,
+    Min = 0,
+    Max = 10,
+    Rounding = 0,
+    Compact = false,
+    Callback = function(Value)
+        npcTargetDistance = Value
+    end,
+})
+
 Library:OnUnload(function()
     stopTpWalk()
     stopNoclip()
@@ -1005,4 +1122,5 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
 
