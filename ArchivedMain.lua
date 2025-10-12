@@ -372,7 +372,7 @@ local function stopInstantPP()
 end
 
 local InstantPPToggle = MainGroupBox:AddToggle("InstantPP", {
-    Text = "Instant Proximity Prompts",
+    Text = "Instant PP",
     Default = false,
     Callback = function(Value)
         instantPPActive = Value
@@ -1005,3 +1005,4 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
