@@ -396,11 +396,11 @@ local function stopInstantPP()
     end
 end
 
-addToggleWithKeybind(MainGroupBox, "InstantPP", "Instant PP", "InstantPPKeybind", startInstantPP, stopInstantPP)
+local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
 
-MainGroupBox:AddDivider()
+addToggleWithKeybind(ToolsGroupBox, "InstantPP", "Instant PP", "InstantPPKeybind", startInstantPP, stopInstantPP)
 
-local BloodRemoverToggle = MainGroupBox:AddToggle("BloodRemover", {
+local BloodRemoverToggle = ToolsGroupBox:AddToggle("BloodRemover", {
     Text = "Remove Blood",
     Default = false,
     Callback = function(Value)
@@ -435,7 +435,7 @@ BloodRemoverToggle:AddKeyPicker("BloodRemoverKeybind", {
     end,
 })
 
-local BodyCollectorToggle = MainGroupBox:AddToggle("BodyCollector", {
+local BodyCollectorToggle = ToolsGroupBox:AddToggle("BodyCollector", {
     Text = "Auto-Grip",
     Default = false,
     Callback = function(Value)
@@ -500,8 +500,9 @@ BodyCollectorToggle:AddKeyPicker("BodyCollectorKeybind", {
     end,
 })
 
-MainGroupBox:AddDivider()
-MainGroupBox:AddLabel("Parry Keybind"):AddKeyPicker("ParryKeybind", {
+ToolsGroupBox:AddDivider()
+
+ToolsGroupBox:AddLabel("Parry Keybind"):AddKeyPicker("ParryKeybind", {
     Text = "Parry",
     NoUI = false,
     Callback = function()
@@ -511,7 +512,17 @@ MainGroupBox:AddLabel("Parry Keybind"):AddKeyPicker("ParryKeybind", {
     end,
 })
 
-local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
+ToolsGroupBox:AddLabel("Emotion Level Keybind"):AddKeyPicker("EmotionLevelKeybind", {
+    Text = "Emotion Level",
+    NoUI = false,
+    Callback = function()
+        local ReplicatedStorage = game:GetService("ReplicatedStorage")
+        local EmotionLevelIncrease = ReplicatedStorage.Events.EmotionLevelIncrease
+        EmotionLevelIncrease:FireServer(2)
+    end,
+})
+
+ToolsGroupBox:AddDivider()
 
 ToolsGroupBox:AddButton({
     Text = "Load F3X",
