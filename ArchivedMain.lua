@@ -1075,8 +1075,8 @@ AutoDropToggle:AddKeyPicker("AutoDropKeybind", {
 
 local CargoFarmGroup = Tabs.Quests:AddLeftGroupbox("Cargo Extraction", "package")
 
-CargoFarmGroup:AddLabel("(You still need to")
-CargoFarmGroup:AddLabel("get the contract and hit npcs)")
+CargoFarmGroup:AddLabel("(You still need to get the")
+CargoFarmGroup:AddLabel("contract and hit npcs)")
 CargoFarmGroup:AddDivider()
 
 local CargoFarmToggle = CargoFarmGroup:AddToggle("CargoFarmToggle", {
@@ -1161,4 +1161,5 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
 
