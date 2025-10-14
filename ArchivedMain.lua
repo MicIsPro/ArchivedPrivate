@@ -47,13 +47,14 @@ local Tabs = {
 
 local teleportPositions = {
     {name = "Bar", pos = Vector3.new(441, -7, 438)},
-    {name = "Syntheza", pos = Vector3.new(-658, -8, 971)},
-    {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
+    {name = "Syndicate Office", pos = Vector3.new(-658, -8, 971)},
+    {name = "Syntheza", pos = Vector3.new(130, 30, 851)},
     {name = "Subway", pos = Vector3.new(48, 0, 681)},
     {name = "Dumpster Guy", pos = Vector3.new(298, 64, -149)}
 }
 
 local questtps = {
+    {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
     {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
     {name = "Warp Train", pos = Vector3.new(620, -7, 408)},
 }
@@ -900,3 +901,4 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
