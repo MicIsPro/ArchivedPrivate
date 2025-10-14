@@ -28,6 +28,8 @@ local npcTargetEnabled = false
 local infJump, noclipLoop, speedConnection, npcTargetLoop
 local npcTargetPlate = nil
 local npcTargetDistance = 0
+local cargoFarmActive = false
+local cargoBarPosition = Vector3.new(441, -7, 438)
 
 local Window = Library:CreateWindow({
     Title = "Archived",
@@ -40,6 +42,7 @@ local Window = Library:CreateWindow({
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
     NPCTargetter = Window:AddTab("NPC Targetter", "target"),
+    Quests = Window:AddTab("Quests", "scroll-text"),
     LCorp = Window:AddTab("L.Corp", "building"),
     AutoDrop = Window:AddTab("Auto Drop", "trash-2"),
     ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
@@ -357,6 +360,240 @@ local function autoDrop()
             wait(0)
         end
     end
+end
+
+local function startCargoFarm()
+    cargoFarmActive = true
+    
+    task.spawn(function()
+        while cargoFarmActive do
+            instantTeleport(cargoBarPosition)
+            wait(0.3)
+            
+            local talkRemote = workspace.NPCS:FindFirstChild("Office Contractor")
+            if talkRemote then
+                local talkToNPC = talkRemote:FindFirstChild("TalkToNPC")
+                if talkToNPC then
+                    talkToNPC:FireServer()
+                end
+            end
+            wait(1)
+            
+            local contractFired = false
+            local contractConnection
+            contractConnection = game:GetService("ReplicatedStorage").Events.CreateContract.OnClientEvent:Connect(function()
+                contractFired = true
+                contractConnection:Disconnect()
+            end)
+            
+            local timeout = 0
+            while not contractFired and cargoFarmActive and timeout < 30 do
+                wait(0.5)
+                timeout = timeout + 0.5
+            end
+            
+            if not cargoFarmActive then break end
+            
+            wait(0.5)
+            
+            local cargo = workspace.Thrown:WaitForChild("Cargo", 10)
+            if cargo then
+                local cargoPosition = cargo:IsA("Model") and cargo:GetPivot().Position or cargo.Position
+                instantTeleport(cargoPosition + Vector3.new(0, 5, 0))
+            else
+                wait(2)
+                continue
+            end
+            wait(0.5)
+            
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            
+            local cargoPlate = Instance.new("Part")
+            cargoPlate.Name = "CargoNPCTargetPlate"
+            cargoPlate.Shape = Enum.PartType.Block
+            cargoPlate.Size = Vector3.new(8, 0.5, 8)
+            cargoPlate.CanCollide = true
+            cargoPlate.Anchored = true
+            cargoPlate.CanQuery = false
+            cargoPlate.Material = Enum.Material.ForceField
+            cargoPlate.Transparency = 0.3
+            cargoPlate.TopSurface = Enum.SurfaceType.Smooth
+            cargoPlate.BottomSurface = Enum.SurfaceType.Smooth
+            cargoPlate.Parent = workspace
+            
+            local currentTarget = nil
+            local lastHealth = nil
+            local currentDistance = 10
+            local isAttacking = false
+            local lastAttackTime = 0
+            
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                if method == "FireServer" and self.Name == "LightAttack" then
+                    isAttacking = true
+                    lastAttackTime = tick()
+                end
+                return oldNamecall(self, ...)
+            end)
+            
+            local connection
+            connection = RunService.RenderStepped:Connect(function()
+                if not cargoFarmActive then
+                    connection:Disconnect()
+                    if cargoPlate then
+                        cargoPlate:Destroy()
+                    end
+                    return
+                end
+                
+                local rifleCount = 0
+                local gunCount = 0
+                local alive = workspace:FindFirstChild("Alive")
+                if alive then
+                    for _, entity in pairs(alive:GetChildren()) do
+                        if entity:FindFirstChild("Humanoid") then
+                            local humanoid = entity.Humanoid
+                            if entity.Name == "Rifle-Wielding Fixer" and (humanoid.Health > 2) then
+                                rifleCount = rifleCount + 1
+                            elseif entity.Name == "Gun-Wielding Fixer" and (humanoid.Health > 2) then
+                                gunCount = gunCount + 1
+                            end
+                        end
+                    end
+                end
+                
+                if rifleCount == 0 and gunCount == 0 then
+                    connection:Disconnect()
+                    if cargoPlate then
+                        cargoPlate:Destroy()
+                    end
+                    return
+                end
+                
+                if tick() - lastAttackTime > 0.3 then
+                    isAttacking = false
+                end
+                
+                if isAttacking then
+                    currentDistance = 4
+                else
+                    currentDistance = 10
+                end
+                
+                local shouldSwitchTarget = false
+                
+                if currentTarget and currentTarget:FindFirstChild("Humanoid") then
+                    local npcHumanoid = currentTarget.Humanoid
+                    if npcHumanoid.Health <= 2 then
+                        local Grip = game:GetService("ReplicatedStorage").Events.Grip
+                        for i = 1, 3 do
+                            Grip:FireServer(currentTarget)
+                            wait(0.05)
+                        end
+                        shouldSwitchTarget = true
+                    elseif lastHealth and npcHumanoid.Health < lastHealth then
+                        lastHealth = npcHumanoid.Health
+                    else
+                        lastHealth = npcHumanoid.Health
+                    end
+                else
+                    shouldSwitchTarget = true
+                end
+                
+                if shouldSwitchTarget then
+                    currentTarget = nil
+                    if alive then
+                        for _, entity in pairs(alive:GetChildren()) do
+                            if (entity.Name == "Rifle-Wielding Fixer" or entity.Name == "Gun-Wielding Fixer") and entity:FindFirstChild("Humanoid") then
+                                local humanoid = entity.Humanoid
+                                if humanoid.Health > 2 then
+                                    currentTarget = entity
+                                    lastHealth = humanoid.Health
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                if currentTarget then
+                    local npcHRP = currentTarget:FindFirstChild("HumanoidRootPart") or currentTarget:FindFirstChild("Torso")
+                    if npcHRP then
+                        local npcPos = npcHRP.Position
+                        local belowPos = Vector3.new(npcPos.X, npcPos.Y - currentDistance, npcPos.Z)
+                        humanoidRootPart.CFrame = CFrame.new(belowPos)
+                        cargoPlate.Position = Vector3.new(belowPos.X, belowPos.Y - 2.5, belowPos.Z)
+                    end
+                end
+            end)
+            
+            while cargoFarmActive do
+                local rifleCount = 0
+                local gunCount = 0
+                local alive = workspace:FindFirstChild("Alive")
+                if alive then
+                    for _, entity in pairs(alive:GetChildren()) do
+                        if entity:FindFirstChild("Humanoid") then
+                            local humanoid = entity.Humanoid
+                            if entity.Name == "Rifle-Wielding Fixer" and (humanoid.Health > 2) then
+                                rifleCount = rifleCount + 1
+                            elseif entity.Name == "Gun-Wielding Fixer" and (humanoid.Health > 2) then
+                                gunCount = gunCount + 1
+                            end
+                        end
+                    end
+                end
+                if rifleCount == 0 and gunCount == 0 then break end
+                wait(1)
+            end
+            
+            if not cargoFarmActive then break end
+            
+            wait(1)
+            
+            cargo = workspace.Thrown:FindFirstChild("Cargo")
+            if cargo then
+                local mainPart = cargo:FindFirstChild("MainPart")
+                if mainPart then
+                    instantTeleport(mainPart.Position + Vector3.new(0, 3, 0))
+                    wait(1)
+                    
+                    local backpack = LocalPlayer.Backpack
+                    local item = backpack:FindFirstChild("Shipment Keycard")
+                    if item and item:IsA("Tool") then
+                        LocalPlayer.Character.Humanoid:EquipTool(item)
+                        wait(1.5)
+                        
+                        if LocalPlayer.Character:FindFirstChild("Shipment Keycard") then
+                            local interact = mainPart:FindFirstChild("Interact")
+                            if interact and interact:IsA("ProximityPrompt") then
+                                fireproximityprompt(interact)
+                            end
+                        end
+                    end
+                end
+            end
+            
+            local completionFired = false
+            local completionConnection
+            completionConnection = game:GetService("ReplicatedStorage").Events.ContractCompleted.OnClientEvent:Connect(function()
+                completionFired = true
+                completionConnection:Disconnect()
+            end)
+            
+            timeout = 0
+            while not completionFired and cargoFarmActive and timeout < 60 do
+                wait(0.5)
+                timeout = timeout + 0.5
+            end
+            
+            if not cargoFarmActive then break end
+            
+            wait(2)
+        end
+    end)
 end
 
 local MainGroupBox = Tabs.Main:AddLeftGroupbox("Movement", "zap")
@@ -836,6 +1073,29 @@ AutoDropToggle:AddKeyPicker("AutoDropKeybind", {
     end,
 })
 
+local CargoFarmGroup = Tabs.Quests:AddLeftGroupbox("Cargo Extraction", "package")
+
+CargoFarmGroup:AddLabel("(You still need to")
+CargoFarmGroup:AddLabel("get the contract and hit npcs)")
+CargoFarmGroup:AddDivider()
+
+local CargoFarmToggle = CargoFarmGroup:AddToggle("CargoFarmToggle", {
+    Text = "Cargo Farm",
+    Default = false,
+    Callback = function(Value)
+        cargoFarmActive = Value
+        if Value then startCargoFarm() end
+    end,
+})
+
+CargoFarmToggle:AddKeyPicker("CargoFarmKeybind", {
+    Text = "Cargo Farm",
+    Mode = "Toggle",
+    Callback = function()
+        CargoFarmToggle:SetValue(not Toggles.CargoFarmToggle.Value)
+    end,
+})
+
 Library:OnUnload(function()
     stopTpWalk()
     stopNoclip()
@@ -901,5 +1161,4 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
-
 
