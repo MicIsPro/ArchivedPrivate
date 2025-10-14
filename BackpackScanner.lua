@@ -24,7 +24,7 @@ local filteredItems = {
     "Serum W Vial",
     "Serum R Vial",
     "Serum K Vial",
-    "Silencing Gloves",
+    "Fixer Glove",
     "Serum W", -- Singularities
     "Serum R",
     "Serum K",
@@ -810,4 +810,5 @@ spawn(function()
 end)
 
 updateDisplay()
+
 
