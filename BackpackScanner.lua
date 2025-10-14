@@ -8,19 +8,23 @@ local espConnections = {}
 local playerFrames = {}
 
 local filteredItems = {
-    "Book of The Library", -- Books/Pages
-    "Hardblood Fragment",
     "Fragment Of Silence", -- Fragments
     "Fragment of Ruined Mirror Worlds",
     "Seed Of Light", -- Misc
     "Mirror Shard",
-    "Enkephalin",
     "Rewound Time",
     "Glass Of Oblivion",
     "First Kindret Blood",
-    "Exotic Item Cache", -- Caches
-    "Sealed Book Cache",
-    "Bulky Item Cache",
+    "Manifested Armor Shard", -- Singularity materials
+    "Secret Cookbook",
+    "Borrowed Eye",
+    "Meteorite Fragment",
+    "Anklet of the Lake",
+    "Degraded Lock",
+    "Serum W Vial",
+    "Serum R Vial",
+    "Serum K Vial",
+    "Silencing Gloves",
     "Serum W", -- Singularities
     "Serum R",
     "Serum K",
@@ -806,3 +810,4 @@ spawn(function()
 end)
 
 updateDisplay()
+
