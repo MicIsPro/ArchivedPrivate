@@ -1159,7 +1159,7 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
 SaveManager:LoadAutoloadConfig()
-
+-- Fall dmg disabler
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local events = ReplicatedStorage:WaitForChild("Events", 10)
 if events then
@@ -1168,7 +1168,309 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+-- Group Tracker
+local Players = game:GetService("Players")
+local GroupService = game:GetService("GroupService")
+local LocalPlayer = Players.LocalPlayer
 
+local TARGET_GROUP_ID = 32725402
 
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "GroupTrackerGui"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 300, 0, 400)
+mainFrame.Position = UDim2.new(1, -320, 0.5, -200)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = screenGui
 
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 8)
+mainCorner.Parent = mainFrame
+
+local titleBar = Instance.new("Frame")
+titleBar.Name = "TitleBar"
+titleBar.Size = UDim2.new(1, 0, 0, 35)
+titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = mainFrame
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 8)
+titleCorner.Parent = titleBar
+
+local titleText = Instance.new("TextLabel")
+titleText.Name = "TitleText"
+titleText.Size = UDim2.new(1, -45, 1, 0)
+titleText.Position = UDim2.new(0, 10, 0, 0)
+titleText.BackgroundTransparency = 1
+titleText.Text = "Discord mod tracker"
+titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleText.TextSize = 16
+titleText.Font = Enum.Font.GothamBold
+titleText.TextXAlignment = Enum.TextXAlignment.Left
+titleText.Parent = titleBar
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 30, 0, 30)
+closeButton.Position = UDim2.new(1, -35, 0, 2.5)
+closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeButton.BorderSizePixel = 0
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 14
+closeButton.Font = Enum.Font.GothamBold
+closeButton.Parent = titleBar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+closeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = not mainFrame.Visible
+end)
+
+local groupInfoLabel = Instance.new("TextLabel")
+groupInfoLabel.Name = "GroupInfoLabel"
+groupInfoLabel.Size = UDim2.new(1, -20, 0, 25)
+groupInfoLabel.Position = UDim2.new(0, 10, 0, 45)
+groupInfoLabel.BackgroundTransparency = 1
+groupInfoLabel.Text = "Group ID: Idk nigga maybe the archived group?"
+groupInfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+groupInfoLabel.TextSize = 12
+groupInfoLabel.Font = Enum.Font.Gotham
+groupInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
+groupInfoLabel.Parent = mainFrame
+
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Name = "ScrollFrame"
+scrollFrame.Size = UDim2.new(1, -20, 1, -85)
+scrollFrame.Position = UDim2.new(0, 10, 0, 75)
+scrollFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 6
+scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 85)
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.Parent = mainFrame
+
+local scrollCorner = Instance.new("UICorner")
+scrollCorner.CornerRadius = UDim.new(0, 6)
+scrollCorner.Parent = scrollFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Padding = UDim.new(0, 8)
+listLayout.Parent = scrollFrame
+
+listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
+end)
+
+local playerData = {}
+local roleFrames = {}
+
+local function updateDisplay()
+    for _, frame in pairs(roleFrames) do
+        frame:Destroy()
+    end
+    roleFrames = {}
+    
+    local roleGroups = {}
+    local roleRanks = {}
+    
+    for userId, data in pairs(playerData) do
+        local roleName = data.role
+        if not roleGroups[roleName] then
+            roleGroups[roleName] = {}
+            roleRanks[roleName] = data.rank
+        end
+        table.insert(roleGroups[roleName], data.player.Name)
+    end
+    
+    local sortedRoles = {}
+    for role, rank in pairs(roleRanks) do
+        table.insert(sortedRoles, {role = role, rank = rank})
+    end
+    table.sort(sortedRoles, function(a, b) return a.rank > b.rank end)
+    
+    local layoutOrder = 0
+    for _, roleData in ipairs(sortedRoles) do
+        local roleName = roleData.role
+        local playerNames = roleGroups[roleName]
+        
+        table.sort(playerNames)
+        
+        local roleFrame = Instance.new("Frame")
+        roleFrame.Name = roleName
+        roleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
+        roleFrame.BorderSizePixel = 0
+        roleFrame.LayoutOrder = layoutOrder
+        roleFrame.Parent = scrollFrame
+        layoutOrder = layoutOrder + 1
+        
+        local roleCorner = Instance.new("UICorner")
+        roleCorner.CornerRadius = UDim.new(0, 6)
+        roleCorner.Parent = roleFrame
+        
+        local roleLabel = Instance.new("TextLabel")
+        roleLabel.Name = "RoleLabel"
+        roleLabel.Size = UDim2.new(1, -10, 0, 25)
+        roleLabel.Position = UDim2.new(0, 5, 0, 5)
+        roleLabel.BackgroundTransparency = 1
+        roleLabel.Text = roleName .. " Rank:"
+        roleLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
+        roleLabel.TextSize = 13
+        roleLabel.Font = Enum.Font.GothamBold
+        roleLabel.TextXAlignment = Enum.TextXAlignment.Left
+        roleLabel.TextYAlignment = Enum.TextYAlignment.Top
+        roleLabel.Parent = roleFrame
+        
+        local namesText = table.concat(playerNames, ", ")
+        
+        local namesLabel = Instance.new("TextLabel")
+        namesLabel.Name = "NamesLabel"
+        namesLabel.Size = UDim2.new(1, -10, 0, 0)
+        namesLabel.Position = UDim2.new(0, 5, 0, 30)
+        namesLabel.BackgroundTransparency = 1
+        namesLabel.Text = namesText
+        namesLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        namesLabel.TextSize = 12
+        namesLabel.Font = Enum.Font.Gotham
+        namesLabel.TextXAlignment = Enum.TextXAlignment.Left
+        namesLabel.TextYAlignment = Enum.TextYAlignment.Top
+        namesLabel.TextWrapped = true
+        namesLabel.Parent = roleFrame
+        
+        local textBounds = game:GetService("TextService"):GetTextSize(
+            namesText,
+            12,
+            Enum.Font.Gotham,
+            Vector2.new(roleFrame.AbsoluteSize.X - 10, math.huge)
+        )
+        
+        namesLabel.Size = UDim2.new(1, -10, 0, textBounds.Y)
+        roleFrame.Size = UDim2.new(1, -10, 0, textBounds.Y + 40)
+        
+        roleFrames[roleName] = roleFrame
+    end
+end
+
+local function checkPlayerGroup(player)
+    task.spawn(function()
+        local success, result = pcall(function()
+            return player:GetRankInGroup(TARGET_GROUP_ID)
+        end)
+        
+        if success and result > 0 then
+            local roleSuccess, roleName = pcall(function()
+                return player:GetRoleInGroup(TARGET_GROUP_ID)
+            end)
+            
+            if not roleSuccess then
+                roleName = "Unknown Role"
+            end
+            
+            playerData[player.UserId] = {
+                player = player,
+                rank = result,
+                role = roleName
+            }
+            
+            updateDisplay()
+        else
+            if playerData[player.UserId] then
+                playerData[player.UserId] = nil
+                updateDisplay()
+            end
+        end
+    end)
+end
+
+local function removePlayerEntry(player)
+    if playerData[player.UserId] then
+        playerData[player.UserId] = nil
+        updateDisplay()
+    end
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    checkPlayerGroup(player)
+end
+
+Players.PlayerAdded:Connect(function(player)
+    wait(1)
+    checkPlayerGroup(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    removePlayerEntry(player)
+end)
+
+local refreshButton = Instance.new("TextButton")
+refreshButton.Name = "RefreshButton"
+refreshButton.Size = UDim2.new(0, 60, 0, 25)
+refreshButton.Position = UDim2.new(1, -105, 0, 5)
+refreshButton.BackgroundColor3 = Color3.fromRGB(50, 120, 200)
+refreshButton.BorderSizePixel = 0
+refreshButton.Text = "Refresh"
+refreshButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+refreshButton.TextSize = 12
+refreshButton.Font = Enum.Font.GothamBold
+refreshButton.Parent = titleBar
+
+local refreshCorner = Instance.new("UICorner")
+refreshCorner.CornerRadius = UDim.new(0, 6)
+refreshCorner.Parent = refreshButton
+
+refreshButton.MouseButton1Click:Connect(function()
+    playerData = {}
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        checkPlayerGroup(player)
+    end
+end)
+
+local dragging = false
+local dragInput, dragStart, startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(
+        startPos.X.Scale,
+        startPos.X.Offset + delta.X,
+        startPos.Y.Scale,
+        startPos.Y.Offset + delta.Y
+    )
+end
+
+titleBar.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+titleBar.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
