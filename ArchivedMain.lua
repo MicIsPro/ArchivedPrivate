@@ -1672,7 +1672,7 @@ Library:OnUnload(function()
         npcTargetLoop = nil
     end
 end)
--- NOT IN THE LIB (FALL DMG DISABLER)
+-- NOT IN THE LIB
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local events = ReplicatedStorage:WaitForChild("Events", 10)
 if events then
