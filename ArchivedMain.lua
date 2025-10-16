@@ -33,7 +33,7 @@ local cargoBarPosition = Vector3.new(441, -7, 438)
 
 local Window = Library:CreateWindow({
     Title = "Archived",
-    Footer = "V1 - Devotion_M",
+    Footer = "Private Gui - Devotion_M on discord",
     Icon = 95816097006870,
     NotifySide = "Right",
     ShowCustomCursor = false,
@@ -1161,5 +1161,6 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
 
 
