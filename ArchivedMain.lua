@@ -1168,6 +1168,9 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
+wait(0.5)
+
 -- Group Tracker
 local Players = game:GetService("Players")
 local GroupService = game:GetService("GroupService")
@@ -1474,3 +1477,4 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         update(input)
     end
 end)
+
