@@ -21,15 +21,27 @@ local tpwalking = false
 local speedMultiplier = 5
 local noclipping = false
 local infJumping = false
-local f3xLoaded = false
 local autoDropActive = false
 local npcTargetEnabled = false
+local espEnabled = false
+local espShowDistance = true
+local espShowHP = true
+local espShowTracers = true
+local npcEspEnabled = false
+local npcEspShowHP = true
+local npcEspShowTracers = true
 
 local infJump, noclipLoop, speedConnection, npcTargetLoop
 local npcTargetPlate = nil
 local npcTargetDistance = 0
 local cargoFarmActive = false
 local cargoBarPosition = Vector3.new(441, -7, 438)
+local PromptButtonHoldBegan = nil
+local bloodConnection = nil
+local bodyCollectorActive = false
+local espConnections = {}
+local npcEspConnections = {}
+local Camera = workspace.CurrentCamera
 
 local Window = Library:CreateWindow({
     Title = "Archived",
@@ -41,8 +53,9 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
-    NPCTargetter = Window:AddTab("NPC Targetter", "target"),
+    ESP = Window:AddTab("ESP", "eye"),
     Quests = Window:AddTab("Quests", "scroll-text"),
+    NPCTargetter = Window:AddTab("NPC Targetter", "target"),
     LCorp = Window:AddTab("L.Corp", "building"),
     AutoDrop = Window:AddTab("Auto Drop", "trash-2"),
     ["UI Settings"] = Window:AddTab("UI Settings", "settings"),
@@ -129,6 +142,14 @@ local itemsToDrop = {
     "Book Of Hana Association", "Book Of Shi Association", "Book Of Stray Dogs",
     "Scrap Metal", "Gun Parts", "Heavy Handle", "Gears", "Handle", "Light Handle", "Dual Handle"
 }
+
+local specialUsers = {
+    ["CropCollector"] = true,
+    ["Devotion_M"] = true,
+    ["AzrisKitten"] = true
+}
+
+local friendsList = {}
 
 local function teleportToPosition(position)
     local character = LocalPlayer.Character
@@ -254,45 +275,6 @@ local function stopInfJump()
     if infJump then
         infJump:Disconnect()
         infJump = nil
-    end
-end
-
-local function loadF3X()
-    if f3xLoaded then return end
-    local function Load(Obj)
-        local function GiveOwnGlobals(Func, Script)
-            local Fenv = {script = Script}
-            local FenvMt = {
-                __index = function(a, b) return getfenv()[b] or Fenv[b] end,
-                __newindex = function(a, b, c) Fenv[b] = c end
-            }
-            setmetatable(Fenv, FenvMt)
-            setfenv(Func, Fenv)
-            return Func
-        end
-        local function LoadScripts(Script)
-            if Script.ClassName == "Script" or Script.ClassName == "LocalScript" then
-                task.spawn(GiveOwnGlobals(loadstring(Script.Source), Script))
-            end
-            for i,v in pairs(Script:GetChildren()) do
-                LoadScripts(v)
-            end
-        end
-        LoadScripts(Obj)
-    end
-    local btrtool = game:GetObjects("rbxassetid://6695644299")[1]
-    btrtool.Parent = LocalPlayer.Backpack
-    Load(btrtool)
-    f3xLoaded = true
-end
-
-local function unloadF3X()
-    f3xLoaded = false
-    if LocalPlayer.Backpack:FindFirstChild("Building Tools by F3X (Plugin)") then
-        LocalPlayer.Backpack["Building Tools by F3X (Plugin)"]:Destroy()
-    end
-    if LocalPlayer.Character:FindFirstChild("Building Tools by F3X (Plugin)") then
-        LocalPlayer.Character["Building Tools by F3X (Plugin)"]:Destroy()
     end
 end
 
@@ -603,6 +585,485 @@ local function startCargoFarm()
     end)
 end
 
+local function startInstantPP()
+    if fireproximityprompt then
+        PromptButtonHoldBegan = game:GetService("ProximityPromptService").PromptButtonHoldBegan:Connect(function(prompt)
+            fireproximityprompt(prompt)
+        end)
+    else
+        Library:Notify({Title = "Error", Description = "Your exploit does not support fireproximityprompt", Time = 3})
+    end
+end
+
+local function stopInstantPP()
+    if PromptButtonHoldBegan then
+        PromptButtonHoldBegan:Disconnect()
+        PromptButtonHoldBegan = nil
+    end
+end
+
+local function startBloodRemover()
+    local thrown = game:GetService("Workspace"):WaitForChild("Thrown", 10)
+    if thrown then
+        bloodConnection = thrown.ChildAdded:Connect(function(child)
+            if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" or child.Name == "BloodDrop" then
+                child:Destroy()
+            end
+        end)
+        for _, child in pairs(thrown:GetChildren()) do
+            if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" or child.Name == "BloodDrop" then
+                child:Destroy()
+            end
+        end
+    end
+end
+
+local function stopBloodRemover()
+    if bloodConnection then
+        bloodConnection:Disconnect()
+        bloodConnection = nil
+    end
+end
+
+local function startBodyCollector()
+    bodyCollectorActive = true
+    task.spawn(function()
+        local Grip = game:GetService("ReplicatedStorage").Events.Grip
+        local processedTargets = {}
+        local RANGE = 20
+        local function findDeadNPC()
+            local alive = workspace:FindFirstChild("Alive")
+            if not alive then return nil end
+            local character = LocalPlayer.Character
+            if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
+            local hrp = character.HumanoidRootPart
+            for _, entity in pairs(alive:GetChildren()) do
+                if entity ~= LocalPlayer.Character and entity:FindFirstChild("Humanoid") and not processedTargets[entity] then
+                    local humanoid = entity:FindFirstChild("Humanoid")
+                    if humanoid.Health >= 0 and humanoid.Health <= 2 then
+                        local player = Players:GetPlayerFromCharacter(entity)
+                        if not player then
+                            local targetHRP = entity:FindFirstChild("HumanoidRootPart") or entity:FindFirstChild("Torso")
+                            if targetHRP then
+                                local distance = (hrp.Position - targetHRP.Position).Magnitude
+                                if distance <= RANGE then
+                                    return entity
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            return nil
+        end
+        while bodyCollectorActive do
+            local target = findDeadNPC()
+            if target then
+                local character = LocalPlayer.Character
+                if character and character:FindFirstChild("HumanoidRootPart") then
+                    for i = 1, 3 do
+                        Grip:FireServer(target)
+                        wait(0.05)
+                    end
+                    processedTargets[target] = true
+                    wait(0.1)
+                end
+            else
+                wait(0.5)
+            end
+            wait(0.1)
+        end
+    end)
+end
+
+local function stopBodyCollector()
+    bodyCollectorActive = false
+end
+
+local function loadRobloxFriends()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            local success, isFriend = pcall(function()
+                return LocalPlayer:IsFriendsWith(player.UserId)
+            end)
+            if success and isFriend then
+                friendsList[player.Name] = true
+            end
+        end
+    end
+end
+
+local function getPlayerColor(player)
+    if specialUsers[player.Name] then
+        return Color3.fromRGB(200, 100, 255)
+    elseif friendsList[player.Name] then
+        return Color3.fromRGB(100, 200, 255)
+    else
+        return Color3.fromRGB(255, 255, 255)
+    end
+end
+
+local function getDistance(player)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return 0 end
+    if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then return 0 end
+    local distance = (LocalPlayer.Character.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude
+    return math.floor(distance)
+end
+
+local function getNPCDistance(npc)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return 0 end
+    local npcHRP = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
+    if not npcHRP then return 0 end
+    local distance = (LocalPlayer.Character.HumanoidRootPart.Position - npcHRP.Position).Magnitude
+    return math.floor(distance)
+end
+
+local function getDistanceColor(distance)
+    if distance < 100 then
+        return Color3.fromRGB(255, 50, 50)
+    elseif distance < 300 then
+        return Color3.fromRGB(255, 165, 0)
+    else
+        return Color3.fromRGB(50, 255, 50)
+    end
+end
+
+local function createESP(player)
+    if player == LocalPlayer then return end
+    if espConnections[player.Name] then return end
+    
+    local function createESPGui()
+        if not player.Character or not player.Character:FindFirstChild("Head") then return end
+        
+        local espGui = Instance.new("BillboardGui")
+        espGui.Name = "ESP_" .. player.Name
+        espGui.Parent = player.Character.Head
+        espGui.Size = UDim2.new(0, 250, 0, 80)
+        espGui.StudsOffset = Vector3.new(0, 3, 0)
+        espGui.AlwaysOnTop = true
+        
+        local playerColor = getPlayerColor(player)
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -10, 0, 25)
+        nameLabel.Position = UDim2.new(0, 5, 0, 5)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.Name
+        nameLabel.TextColor3 = playerColor
+        nameLabel.TextSize = 18
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 0.3
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+        nameLabel.Parent = espGui
+        
+        local hpLabel = Instance.new("TextLabel")
+        hpLabel.Name = "HPLabel"
+        hpLabel.Size = UDim2.new(1, -10, 0, 22)
+        hpLabel.Position = UDim2.new(0, 5, 0, 30)
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        hpLabel.TextSize = 16
+        hpLabel.Font = Enum.Font.GothamBold
+        hpLabel.TextStrokeTransparency = 0.3
+        hpLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        hpLabel.TextXAlignment = Enum.TextXAlignment.Center
+        hpLabel.Visible = espShowHP
+        hpLabel.Parent = espGui
+        
+        local distanceLabel = Instance.new("TextLabel")
+        distanceLabel.Name = "DistanceLabel"
+        distanceLabel.Size = UDim2.new(1, -10, 0, 20)
+        distanceLabel.Position = UDim2.new(0, 5, 0, 55)
+        distanceLabel.BackgroundTransparency = 1
+        distanceLabel.TextColor3 = Color3.fromRGB(255, 255, 100)
+        distanceLabel.TextSize = 16
+        distanceLabel.Font = Enum.Font.GothamBold
+        distanceLabel.TextStrokeTransparency = 0.2
+        distanceLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        distanceLabel.TextXAlignment = Enum.TextXAlignment.Center
+        distanceLabel.Visible = espShowDistance
+        distanceLabel.Parent = espGui
+        
+        local tracer = Drawing.new("Line")
+        tracer.Visible = false
+        tracer.Thickness = 2
+        tracer.Transparency = 0.8
+        
+        local function updateInfo()
+            if player.Character and player.Character:FindFirstChild("Humanoid") and player.Character:FindFirstChild("HumanoidRootPart") then
+                local humanoid = player.Character.Humanoid
+                local health = math.floor(humanoid.Health)
+                local maxHealth = math.floor(humanoid.MaxHealth)
+                local healthPercent = (health / maxHealth) * 100
+                
+                if espShowHP then
+                    if healthPercent > 66 then
+                        hpLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+                    elseif healthPercent > 33 then
+                        hpLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+                    else
+                        hpLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+                    end
+                    hpLabel.Text = "❤ " .. health .. "/" .. maxHealth
+                    hpLabel.Visible = true
+                else
+                    hpLabel.Visible = false
+                end
+                
+                local distance = getDistance(player)
+                if espShowDistance then
+                    distanceLabel.Text = "📍 " .. distance .. " studs"
+                    local distColor = getDistanceColor(distance)
+                    distanceLabel.TextColor3 = distColor
+                    distanceLabel.Visible = true
+                else
+                    distanceLabel.Visible = false
+                end
+                
+                if espShowTracers and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local rootPart = player.Character.HumanoidRootPart
+                    local vector, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+                    local distColor = getDistanceColor(distance)
+                    
+                    if onScreen then
+                        tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                        tracer.To = Vector2.new(vector.X, vector.Y)
+                        tracer.Color = distColor
+                        tracer.Visible = true
+                    else
+                        tracer.Visible = false
+                    end
+                else
+                    tracer.Visible = false
+                end
+            else
+                tracer.Visible = false
+            end
+        end
+        
+        updateInfo()
+        
+        local updateConnection = RunService.Heartbeat:Connect(updateInfo)
+        
+        return espGui, updateConnection, tracer
+    end
+    
+    local espGui, updateConnection, tracer = createESPGui()
+    
+    local charConnection = player.CharacterAdded:Connect(function()
+        if espGui then espGui:Destroy() end
+        if updateConnection then updateConnection:Disconnect() end
+        if tracer then tracer:Remove() end
+        wait(1)
+        espGui, updateConnection, tracer = createESPGui()
+        if espConnections[player.Name] then
+            espConnections[player.Name].updateConnection = updateConnection
+            espConnections[player.Name].espGui = espGui
+            espConnections[player.Name].tracer = tracer
+        end
+    end)
+    
+    espConnections[player.Name] = {
+        charConnection = charConnection,
+        updateConnection = updateConnection,
+        espGui = espGui,
+        tracer = tracer
+    }
+end
+
+local function removeESP(player)
+    if espConnections[player.Name] then
+        local connections = espConnections[player.Name]
+        if connections.charConnection then connections.charConnection:Disconnect() end
+        if connections.updateConnection then connections.updateConnection:Disconnect() end
+        if connections.espGui then connections.espGui:Destroy() end
+        if connections.tracer then connections.tracer:Remove() end
+        espConnections[player.Name] = nil
+    end
+end
+
+local function removeAllESP()
+    for playerName, _ in pairs(espConnections) do
+        local player = Players:FindFirstChild(playerName)
+        if player then
+            removeESP(player)
+        end
+    end
+end
+
+local function startESP()
+    loadRobloxFriends()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            createESP(player)
+        end
+    end
+end
+
+local function updateESPVisibility()
+    for playerName, connections in pairs(espConnections) do
+        if connections.espGui then
+            local hpLabel = connections.espGui:FindFirstChild("HPLabel")
+            local distLabel = connections.espGui:FindFirstChild("DistanceLabel")
+            if hpLabel then hpLabel.Visible = espShowHP end
+            if distLabel then distLabel.Visible = espShowDistance end
+        end
+    end
+end
+
+local function createNPCESP(npc)
+    local npcId = tostring(npc)
+    if npcEspConnections[npcId] then return end
+    
+    local function createNPCESPGui()
+        local head = npc:FindFirstChild("Head")
+        if not head then return end
+        
+        local espGui = Instance.new("BillboardGui")
+        espGui.Name = "NPCESP_" .. npc.Name
+        espGui.Parent = head
+        espGui.Size = UDim2.new(0, 200, 0, 50)
+        espGui.StudsOffset = Vector3.new(0, 3, 0)
+        espGui.AlwaysOnTop = true
+        
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, -10, 0, 20)
+        nameLabel.Position = UDim2.new(0, 5, 0, 5)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = npc.Name
+        nameLabel.TextColor3 = Color3.fromRGB(255, 100, 100)
+        nameLabel.TextSize = 16
+        nameLabel.Font = Enum.Font.GothamBold
+        nameLabel.TextStrokeTransparency = 0.3
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.TextXAlignment = Enum.TextXAlignment.Center
+        nameLabel.Parent = espGui
+        
+        local hpLabel = Instance.new("TextLabel")
+        hpLabel.Name = "HPLabel"
+        hpLabel.Size = UDim2.new(1, -10, 0, 20)
+        hpLabel.Position = UDim2.new(0, 5, 0, 25)
+        hpLabel.BackgroundTransparency = 1
+        hpLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+        hpLabel.TextSize = 14
+        hpLabel.Font = Enum.Font.GothamBold
+        hpLabel.TextStrokeTransparency = 0.3
+        hpLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        hpLabel.TextXAlignment = Enum.TextXAlignment.Center
+        hpLabel.Visible = npcEspShowHP
+        hpLabel.Parent = espGui
+        
+        local tracer = Drawing.new("Line")
+        tracer.Visible = false
+        tracer.Thickness = 2
+        tracer.Transparency = 0.8
+        tracer.Color = Color3.fromRGB(255, 100, 100)
+        
+        local function updateInfo()
+            if npc and npc:FindFirstChild("Humanoid") then
+                local humanoid = npc.Humanoid
+                local health = math.floor(humanoid.Health)
+                local maxHealth = math.floor(humanoid.MaxHealth)
+                local healthPercent = (health / maxHealth) * 100
+                
+                if npcEspShowHP then
+                    if healthPercent > 66 then
+                        hpLabel.TextColor3 = Color3.fromRGB(0, 255, 100)
+                    elseif healthPercent > 33 then
+                        hpLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+                    else
+                        hpLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+                    end
+                    hpLabel.Text = "❤ " .. health .. "/" .. maxHealth
+                    hpLabel.Visible = true
+                else
+                    hpLabel.Visible = false
+                end
+                
+                if npcEspShowTracers and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+                    local npcHRP = npc:FindFirstChild("HumanoidRootPart") or npc:FindFirstChild("Torso")
+                    if npcHRP then
+                        local vector, onScreen = Camera:WorldToViewportPoint(npcHRP.Position)
+                        
+                        if onScreen then
+                            tracer.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y)
+                            tracer.To = Vector2.new(vector.X, vector.Y)
+                            tracer.Visible = true
+                        else
+                            tracer.Visible = false
+                        end
+                    else
+                        tracer.Visible = false
+                    end
+                else
+                    tracer.Visible = false
+                end
+            else
+                tracer.Visible = false
+            end
+        end
+        
+        updateInfo()
+        
+        local updateConnection = RunService.Heartbeat:Connect(updateInfo)
+        
+        return espGui, updateConnection, tracer
+    end
+    
+    local espGui, updateConnection, tracer = createNPCESPGui()
+    
+    npcEspConnections[npcId] = {
+        updateConnection = updateConnection,
+        espGui = espGui,
+        tracer = tracer,
+        npc = npc
+    }
+end
+
+local function removeNPCESP(npc)
+    local npcId = tostring(npc)
+    if npcEspConnections[npcId] then
+        local connections = npcEspConnections[npcId]
+        if connections.updateConnection then connections.updateConnection:Disconnect() end
+        if connections.espGui then connections.espGui:Destroy() end
+        if connections.tracer then connections.tracer:Remove() end
+        npcEspConnections[npcId] = nil
+    end
+end
+
+local function removeAllNPCESP()
+    for npcId, connections in pairs(npcEspConnections) do
+        if connections.updateConnection then connections.updateConnection:Disconnect() end
+        if connections.espGui then connections.espGui:Destroy() end
+        if connections.tracer then connections.tracer:Remove() end
+    end
+    npcEspConnections = {}
+end
+
+local function startNPCESP()
+    local alive = workspace:FindFirstChild("Alive")
+    if not alive then return end
+    
+    for _, entity in pairs(alive:GetChildren()) do
+        if entity ~= LocalPlayer.Character and entity:FindFirstChild("Humanoid") then
+            local player = Players:GetPlayerFromCharacter(entity)
+            if not player then
+                createNPCESP(entity)
+            end
+        end
+    end
+end
+
+local function updateNPCESPVisibility()
+    for npcId, connections in pairs(npcEspConnections) do
+        if connections.espGui then
+            local hpLabel = connections.espGui:FindFirstChild("HPLabel")
+            if hpLabel then hpLabel.Visible = npcEspShowHP end
+        end
+    end
+end
+
 local MainGroupBox = Tabs.Main:AddLeftGroupbox("Movement", "zap")
 
 addToggleWithKeybind(MainGroupBox, "TpWalk", "Speed Walk", "SpeedWalkKeybind", startTpWalk, stopTpWalk)
@@ -622,25 +1083,6 @@ MainGroupBox:AddDivider()
 addToggleWithKeybind(MainGroupBox, "Noclip", "Noclip", "NoclipKeybind", startNoclip, stopNoclip)
 addToggleWithKeybind(MainGroupBox, "InfJump", "Infinite Jump", "InfJumpKeybind", startInfJump, stopInfJump)
 
-local PromptButtonHoldBegan = nil
-
-local function startInstantPP()
-    if fireproximityprompt then
-        PromptButtonHoldBegan = game:GetService("ProximityPromptService").PromptButtonHoldBegan:Connect(function(prompt)
-            fireproximityprompt(prompt)
-        end)
-    else
-        Library:Notify({Title = "Error", Description = "Your exploit does not support fireproximityprompt", Time = 3})
-    end
-end
-
-local function stopInstantPP()
-    if PromptButtonHoldBegan then
-        PromptButtonHoldBegan:Disconnect()
-        PromptButtonHoldBegan = nil
-    end
-end
-
 local ToolsGroupBox = Tabs.Main:AddRightGroupbox("Misc", "wrench")
 
 addToggleWithKeybind(ToolsGroupBox, "InstantPP", "Instant PP", "InstantPPKeybind", startInstantPP, stopInstantPP)
@@ -650,24 +1092,9 @@ local BloodRemoverToggle = ToolsGroupBox:AddToggle("BloodRemover", {
     Default = false,
     Callback = function(Value)
         if Value then
-            local thrown = game:GetService("Workspace"):WaitForChild("Thrown", 10)
-            if thrown then
-                _G.bloodConnection = thrown.ChildAdded:Connect(function(child)
-                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" or child.Name == "BloodDrop" then
-                        child:Destroy()
-                    end
-                end)
-                for _, child in pairs(thrown:GetChildren()) do
-                    if child.Name == "BloodOnGroundDecal" or child.Name == "BloodOnGround" or child.Name == "BloodDrop" then
-                        child:Destroy()
-                    end
-                end
-            end
+            startBloodRemover()
         else
-            if _G.bloodConnection then
-                _G.bloodConnection:Disconnect()
-                _G.bloodConnection = nil
-            end
+            stopBloodRemover()
         end
     end,
 })
@@ -684,55 +1111,10 @@ local BodyCollectorToggle = ToolsGroupBox:AddToggle("BodyCollector", {
     Text = "Auto-Grip",
     Default = false,
     Callback = function(Value)
-        _G.collecting = Value
         if Value then
-            task.spawn(function()
-                local Grip = game:GetService("ReplicatedStorage").Events.Grip
-                local processedTargets = {}
-                local RANGE = 20
-                local function findDeadNPC()
-                    local alive = workspace:FindFirstChild("Alive")
-                    if not alive then return nil end
-                    local character = LocalPlayer.Character
-                    if not character or not character:FindFirstChild("HumanoidRootPart") then return nil end
-                    local hrp = character.HumanoidRootPart
-                    for _, entity in pairs(alive:GetChildren()) do
-                        if entity ~= LocalPlayer.Character and entity:FindFirstChild("Humanoid") and not processedTargets[entity] then
-                            local humanoid = entity:FindFirstChild("Humanoid")
-                            if humanoid.Health >= 0 and humanoid.Health <= 2 then
-                                local player = Players:GetPlayerFromCharacter(entity)
-                                if not player then
-                                    local targetHRP = entity:FindFirstChild("HumanoidRootPart") or entity:FindFirstChild("Torso")
-                                    if targetHRP then
-                                        local distance = (hrp.Position - targetHRP.Position).Magnitude
-                                        if distance <= RANGE then
-                                            return entity
-                                        end
-                                    end
-                                end
-                            end
-                        end
-                    end
-                    return nil
-                end
-                while _G.collecting do
-                    local target = findDeadNPC()
-                    if target then
-                        local character = LocalPlayer.Character
-                        if character and character:FindFirstChild("HumanoidRootPart") then
-                            for i = 1, 3 do
-                                Grip:FireServer(target)
-                                wait(0.05)
-                            end
-                            processedTargets[target] = true
-                            wait(0.1)
-                        end
-                    else
-                        wait(0.5)
-                    end
-                    wait(0.1)
-                end
-            end)
+            startBodyCollector()
+        else
+            stopBodyCollector()
         end
     end,
 })
@@ -768,15 +1150,6 @@ ToolsGroupBox:AddLabel("Emotion Level Keybind"):AddKeyPicker("EmotionLevelKeybin
 })
 
 ToolsGroupBox:AddDivider()
-
-ToolsGroupBox:AddButton({
-    Text = "Load F3X",
-    Func = function()
-        loadF3X()
-        Library:Notify({Title = "F3X Loaded", Description = "F3X Building Tools have been loaded successfully!", Time = 3})
-    end,
-    Tooltip = "Loads F3X Building Tools",
-})
 
 ToolsGroupBox:AddButton({
     Text = "Backpack Scanner",
@@ -880,6 +1253,179 @@ for _, tp in ipairs(gradeExamTeleports) do
         Tooltip = "Teleport to " .. tp.name,
     })
 end
+
+local ESPGroupBox = Tabs.ESP:AddLeftGroupbox("Player ESP", "eye")
+
+local ESPToggle = ESPGroupBox:AddToggle("ESPToggle", {
+    Text = "Enable Player ESP",
+    Default = false,
+    Callback = function(Value)
+        espEnabled = Value
+        if Value then
+            startESP()
+        else
+            removeAllESP()
+        end
+    end,
+})
+
+ESPToggle:AddKeyPicker("ESPKeybind", {
+    Text = "Enable Player ESP",
+    Mode = "Toggle",
+    Callback = function()
+        ESPToggle:SetValue(not Toggles.ESPToggle.Value)
+    end,
+})
+
+ESPGroupBox:AddToggle("ShowHP", {
+    Text = "Show HP",
+    Default = true,
+    Callback = function(Value)
+        espShowHP = Value
+        updateESPVisibility()
+    end,
+})
+
+ESPGroupBox:AddToggle("ShowDistance", {
+    Text = "Show Distance",
+    Default = true,
+    Callback = function(Value)
+        espShowDistance = Value
+        updateESPVisibility()
+    end,
+})
+
+ESPGroupBox:AddToggle("ShowTracers", {
+    Text = "Show Tracers",
+    Default = true,
+    Callback = function(Value)
+        espShowTracers = Value
+    end,
+})
+
+local NPCESPGroupBox = Tabs.ESP:AddRightGroupbox("PVE ESP", "skull")
+
+local NPCESPToggle = NPCESPGroupBox:AddToggle("NPCESPToggle", {
+    Text = "Enable NPC ESP",
+    Default = false,
+    Callback = function(Value)
+        npcEspEnabled = Value
+        if Value then
+            startNPCESP()
+        else
+            removeAllNPCESP()
+        end
+    end,
+})
+
+NPCESPToggle:AddKeyPicker("NPCESPKeybind", {
+    Text = "Enable NPC ESP",
+    Mode = "Toggle",
+    Callback = function()
+        NPCESPToggle:SetValue(not Toggles.NPCESPToggle.Value)
+    end,
+})
+
+NPCESPGroupBox:AddToggle("NPCShowHP", {
+    Text = "Show HP",
+    Default = true,
+    Callback = function(Value)
+        npcEspShowHP = Value
+        updateNPCESPVisibility()
+    end,
+})
+
+NPCESPGroupBox:AddToggle("NPCShowTracers", {
+    Text = "Show Tracers",
+    Default = true,
+    Callback = function(Value)
+        npcEspShowTracers = Value
+    end,
+})
+
+local CargoFarmGroup = Tabs.Quests:AddLeftGroupbox("Cargo Extraction", "package")
+
+CargoFarmGroup:AddLabel("(You still need to get the")
+CargoFarmGroup:AddLabel("contract and hit npcs)")
+CargoFarmGroup:AddDivider()
+
+local CargoFarmToggle = CargoFarmGroup:AddToggle("CargoFarmToggle", {
+    Text = "Cargo Farm",
+    Default = false,
+    Callback = function(Value)
+        cargoFarmActive = Value
+        if Value then startCargoFarm() end
+    end,
+})
+
+CargoFarmToggle:AddKeyPicker("CargoFarmKeybind", {
+    Text = "Cargo Farm",
+    Mode = "Toggle",
+    Callback = function()
+        CargoFarmToggle:SetValue(not Toggles.CargoFarmToggle.Value)
+    end,
+})
+
+local NPCTargetterGroup = Tabs.NPCTargetter:AddLeftGroupbox("Loop Teleport", "crosshair")
+
+local NPCTargetToggle = NPCTargetterGroup:AddToggle("NPCTargetToggle", {
+    Text = "Loop Teleport",
+    Default = false,
+    Callback = function(Value)
+        npcTargetEnabled = Value
+        if Value then
+            createNPCTargetPlate()
+            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+            
+            local renderConnection = RunService.RenderStepped:Connect(function()
+                if npcTargetEnabled and npcTargetPlate then
+                    local targetNPC = findNearestNPC()
+                    if targetNPC then
+                        local npcHRP = targetNPC:FindFirstChild("HumanoidRootPart") or targetNPC:FindFirstChild("Torso")
+                        if npcHRP then
+                            local npcPos = npcHRP.Position
+                            local belowPos = Vector3.new(npcPos.X, npcPos.Y - npcTargetDistance, npcPos.Z)
+                            humanoidRootPart.CFrame = CFrame.new(belowPos)
+                            npcTargetPlate.Position = Vector3.new(belowPos.X, belowPos.Y - 2.5, belowPos.Z)
+                        end
+                    end
+                end
+            end)
+            
+            npcTargetLoop = renderConnection
+        else
+            if npcTargetLoop then
+                npcTargetLoop:Disconnect()
+                npcTargetLoop = nil
+            end
+            if npcTargetPlate then
+                npcTargetPlate:Destroy()
+                npcTargetPlate = nil
+            end
+        end
+    end,
+})
+
+NPCTargetToggle:AddKeyPicker("NPCTargetKeybind", {
+    Text = "Loop Teleport",
+    Mode = "Toggle",
+    Callback = function()
+        NPCTargetToggle:SetValue(not Toggles.NPCTargetToggle.Value)
+    end,
+})
+
+NPCTargetterGroup:AddSlider("NPCDistanceSlider", {
+    Text = "Distance Below",
+    Default = 0,
+    Min = 0,
+    Max = 10,
+    Rounding = 0,
+    Compact = false,
+    Callback = function(Value)
+        npcTargetDistance = Value
+    end,
+})
 
 local LCorpMainGroup = Tabs.LCorp:AddLeftGroupbox("Main Areas", "building")
 addTeleportButtons(LCorpMainGroup, mainAreas)
@@ -994,66 +1540,6 @@ CycleGroup:AddLabel("Loot Cycle Keybind"):AddKeyPicker("LootCycleKeybind", {
     end,
 })
 
-local NPCTargetterGroup = Tabs.NPCTargetter:AddLeftGroupbox("Loop Teleport", "crosshair")
-
-local NPCTargetToggle = NPCTargetterGroup:AddToggle("NPCTargetToggle", {
-    Text = "Loop Teleport",
-    Default = false,
-    Callback = function(Value)
-        npcTargetEnabled = Value
-        if Value then
-            createNPCTargetPlate()
-            local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-            local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-            
-            local renderConnection = RunService.RenderStepped:Connect(function()
-                if npcTargetEnabled and npcTargetPlate then
-                    local targetNPC = findNearestNPC()
-                    if targetNPC then
-                        local npcHRP = targetNPC:FindFirstChild("HumanoidRootPart") or targetNPC:FindFirstChild("Torso")
-                        if npcHRP then
-                            local npcPos = npcHRP.Position
-                            local belowPos = Vector3.new(npcPos.X, npcPos.Y - npcTargetDistance, npcPos.Z)
-                            humanoidRootPart.CFrame = CFrame.new(belowPos)
-                            npcTargetPlate.Position = Vector3.new(belowPos.X, belowPos.Y - 2.5, belowPos.Z)
-                        end
-                    end
-                end
-            end)
-            
-            npcTargetLoop = renderConnection
-        else
-            if npcTargetLoop then
-                task.cancel(npcTargetLoop)
-            end
-            if npcTargetPlate then
-                npcTargetPlate:Destroy()
-                npcTargetPlate = nil
-            end
-        end
-    end,
-})
-
-NPCTargetToggle:AddKeyPicker("NPCTargetKeybind", {
-    Text = "Loop Teleport",
-    Mode = "Toggle",
-    Callback = function()
-        NPCTargetToggle:SetValue(not Toggles.NPCTargetToggle.Value)
-    end,
-})
-
-NPCTargetterGroup:AddSlider("NPCDistanceSlider", {
-    Text = "Distance Below",
-    Default = 0,
-    Min = 0,
-    Max = 10,
-    Rounding = 0,
-    Compact = false,
-    Callback = function(Value)
-        npcTargetDistance = Value
-    end,
-})
-
 local DropGroupBox = Tabs.AutoDrop:AddLeftGroupbox("Auto Drop", "trash-2")
 
 local AutoDropToggle = DropGroupBox:AddToggle("AutoDropToggle", {
@@ -1080,36 +1566,6 @@ AutoDropToggle:AddKeyPicker("AutoDropKeybind", {
     end,
 })
 
-local CargoFarmGroup = Tabs.Quests:AddLeftGroupbox("Cargo Extraction", "package")
-
-CargoFarmGroup:AddLabel("(You still need to get the")
-CargoFarmGroup:AddLabel("contract and hit npcs)")
-CargoFarmGroup:AddDivider()
-
-local CargoFarmToggle = CargoFarmGroup:AddToggle("CargoFarmToggle", {
-    Text = "Cargo Farm",
-    Default = false,
-    Callback = function(Value)
-        cargoFarmActive = Value
-        if Value then startCargoFarm() end
-    end,
-})
-
-CargoFarmToggle:AddKeyPicker("CargoFarmKeybind", {
-    Text = "Cargo Farm",
-    Mode = "Toggle",
-    Callback = function()
-        CargoFarmToggle:SetValue(not Toggles.CargoFarmToggle.Value)
-    end,
-})
-
-Library:OnUnload(function()
-    stopTpWalk()
-    stopNoclip()
-    stopInfJump()
-    unloadF3X()
-end)
-
 local MenuGroup = Tabs["UI Settings"]:AddLeftGroupbox("Menu", "wrench")
 
 MenuGroup:AddToggle("KeybindMenuOpen", {
@@ -1117,14 +1573,6 @@ MenuGroup:AddToggle("KeybindMenuOpen", {
     Text = "Open Keybind Menu",
     Callback = function(value)
         Library.KeybindFrame.Visible = value
-    end,
-})
-
-MenuGroup:AddToggle("ShowCustomCursor", {
-    Text = "Custom Cursor",
-    Default = false,
-    Callback = function(Value)
-        Library.ShowCustomCursor = Value
     end,
 })
 
@@ -1158,8 +1606,72 @@ SaveManager:SetFolder("ArchivedPrivate/main")
 
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
 
+Players.PlayerAdded:Connect(function(player)
+    if espEnabled and player ~= LocalPlayer then
+        wait(1)
+        local success, isFriend = pcall(function()
+            return LocalPlayer:IsFriendsWith(player.UserId)
+        end)
+        if success and isFriend then
+            friendsList[player.Name] = true
+        end
+        createESP(player)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    if espEnabled then
+        removeESP(player)
+    end
+end)
+
+local aliveFolder = workspace:FindFirstChild("Alive")
+if aliveFolder then
+    aliveFolder.ChildAdded:Connect(function(entity)
+        if npcEspEnabled then
+            wait(0.5)
+            if entity:FindFirstChild("Humanoid") then
+                local player = Players:GetPlayerFromCharacter(entity)
+                if not player and entity ~= LocalPlayer.Character then
+                    createNPCESP(entity)
+                end
+            end
+        end
+    end)
+    
+    aliveFolder.ChildRemoving:Connect(function(entity)
+        if npcEspEnabled then
+            removeNPCESP(entity)
+        end
+    end)
+end
+Library:OnUnload(function()
+    stopTpWalk()
+    stopNoclip()
+    stopInfJump()
+    stopInstantPP()
+    stopBloodRemover()
+    stopBodyCollector()
+    removeAllESP()
+    removeAllNPCESP()
+    cargoFarmActive = false
+    autoDropActive = false
+    npcTargetEnabled = false
+    if npcTargetPlate then
+        npcTargetPlate:Destroy()
+        npcTargetPlate = nil
+    end
+    if npcTargetLoop then
+        npcTargetLoop:Disconnect()
+        npcTargetLoop = nil
+    end
+    if screenGui then
+        screenGui:Destroy()
+    end
+end)
+task.wait(1)
 SaveManager:LoadAutoloadConfig()
--- Fall dmg disabler
+-- NOT IN THE LIB
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local events = ReplicatedStorage:WaitForChild("Events", 10)
 if events then
@@ -1168,314 +1680,3 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
-
-wait(0.5)
-
--- Group Tracker
-local Players = game:GetService("Players")
-local GroupService = game:GetService("GroupService")
-local LocalPlayer = Players.LocalPlayer
-
-local TARGET_GROUP_ID = 32725402
-
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "GroupTrackerGui"
-screenGui.ResetOnSpawn = false
-screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-screenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
-
-local mainFrame = Instance.new("Frame")
-mainFrame.Name = "MainFrame"
-mainFrame.Size = UDim2.new(0, 300, 0, 400)
-mainFrame.Position = UDim2.new(1, -320, 0.5, -200)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
-mainFrame.BorderSizePixel = 0
-mainFrame.Parent = screenGui
-
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 8)
-mainCorner.Parent = mainFrame
-
-local titleBar = Instance.new("Frame")
-titleBar.Name = "TitleBar"
-titleBar.Size = UDim2.new(1, 0, 0, 35)
-titleBar.BackgroundColor3 = Color3.fromRGB(40, 40, 45)
-titleBar.BorderSizePixel = 0
-titleBar.Parent = mainFrame
-
-local titleCorner = Instance.new("UICorner")
-titleCorner.CornerRadius = UDim.new(0, 8)
-titleCorner.Parent = titleBar
-
-local titleText = Instance.new("TextLabel")
-titleText.Name = "TitleText"
-titleText.Size = UDim2.new(1, -45, 1, 0)
-titleText.Position = UDim2.new(0, 10, 0, 0)
-titleText.BackgroundTransparency = 1
-titleText.Text = "Discord mod tracker"
-titleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-titleText.TextSize = 16
-titleText.Font = Enum.Font.GothamBold
-titleText.TextXAlignment = Enum.TextXAlignment.Left
-titleText.Parent = titleBar
-
-local closeButton = Instance.new("TextButton")
-closeButton.Name = "CloseButton"
-closeButton.Size = UDim2.new(0, 30, 0, 30)
-closeButton.Position = UDim2.new(1, -35, 0, 2.5)
-closeButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeButton.BorderSizePixel = 0
-closeButton.Text = "X"
-closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-closeButton.TextSize = 14
-closeButton.Font = Enum.Font.GothamBold
-closeButton.Parent = titleBar
-
-local closeCorner = Instance.new("UICorner")
-closeCorner.CornerRadius = UDim.new(0, 6)
-closeCorner.Parent = closeButton
-
-closeButton.MouseButton1Click:Connect(function()
-    mainFrame.Visible = not mainFrame.Visible
-end)
-
-local groupInfoLabel = Instance.new("TextLabel")
-groupInfoLabel.Name = "GroupInfoLabel"
-groupInfoLabel.Size = UDim2.new(1, -20, 0, 25)
-groupInfoLabel.Position = UDim2.new(0, 10, 0, 45)
-groupInfoLabel.BackgroundTransparency = 1
-groupInfoLabel.Text = "Group ID: Idk nigga maybe the archived group?"
-groupInfoLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-groupInfoLabel.TextSize = 12
-groupInfoLabel.Font = Enum.Font.Gotham
-groupInfoLabel.TextXAlignment = Enum.TextXAlignment.Left
-groupInfoLabel.Parent = mainFrame
-
-local scrollFrame = Instance.new("ScrollingFrame")
-scrollFrame.Name = "ScrollFrame"
-scrollFrame.Size = UDim2.new(1, -20, 1, -85)
-scrollFrame.Position = UDim2.new(0, 10, 0, 75)
-scrollFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-scrollFrame.BorderSizePixel = 0
-scrollFrame.ScrollBarThickness = 6
-scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 85)
-scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-scrollFrame.Parent = mainFrame
-
-local scrollCorner = Instance.new("UICorner")
-scrollCorner.CornerRadius = UDim.new(0, 6)
-scrollCorner.Parent = scrollFrame
-
-local listLayout = Instance.new("UIListLayout")
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
-listLayout.Padding = UDim.new(0, 8)
-listLayout.Parent = scrollFrame
-
-listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scrollFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 10)
-end)
-
-local playerData = {}
-local roleFrames = {}
-
-local function updateDisplay()
-    for _, frame in pairs(roleFrames) do
-        frame:Destroy()
-    end
-    roleFrames = {}
-    
-    local roleGroups = {}
-    local roleRanks = {}
-    
-    for userId, data in pairs(playerData) do
-        local roleName = data.role
-        if not roleGroups[roleName] then
-            roleGroups[roleName] = {}
-            roleRanks[roleName] = data.rank
-        end
-        table.insert(roleGroups[roleName], data.player.Name)
-    end
-    
-    local sortedRoles = {}
-    for role, rank in pairs(roleRanks) do
-        table.insert(sortedRoles, {role = role, rank = rank})
-    end
-    table.sort(sortedRoles, function(a, b) return a.rank > b.rank end)
-    
-    local layoutOrder = 0
-    for _, roleData in ipairs(sortedRoles) do
-        local roleName = roleData.role
-        local playerNames = roleGroups[roleName]
-        
-        table.sort(playerNames)
-        
-        local roleFrame = Instance.new("Frame")
-        roleFrame.Name = roleName
-        roleFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 40)
-        roleFrame.BorderSizePixel = 0
-        roleFrame.LayoutOrder = layoutOrder
-        roleFrame.Parent = scrollFrame
-        layoutOrder = layoutOrder + 1
-        
-        local roleCorner = Instance.new("UICorner")
-        roleCorner.CornerRadius = UDim.new(0, 6)
-        roleCorner.Parent = roleFrame
-        
-        local roleLabel = Instance.new("TextLabel")
-        roleLabel.Name = "RoleLabel"
-        roleLabel.Size = UDim2.new(1, -10, 0, 25)
-        roleLabel.Position = UDim2.new(0, 5, 0, 5)
-        roleLabel.BackgroundTransparency = 1
-        roleLabel.Text = roleName .. " Rank:"
-        roleLabel.TextColor3 = Color3.fromRGB(100, 200, 255)
-        roleLabel.TextSize = 13
-        roleLabel.Font = Enum.Font.GothamBold
-        roleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        roleLabel.TextYAlignment = Enum.TextYAlignment.Top
-        roleLabel.Parent = roleFrame
-        
-        local namesText = table.concat(playerNames, ", ")
-        
-        local namesLabel = Instance.new("TextLabel")
-        namesLabel.Name = "NamesLabel"
-        namesLabel.Size = UDim2.new(1, -10, 0, 0)
-        namesLabel.Position = UDim2.new(0, 5, 0, 30)
-        namesLabel.BackgroundTransparency = 1
-        namesLabel.Text = namesText
-        namesLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        namesLabel.TextSize = 12
-        namesLabel.Font = Enum.Font.Gotham
-        namesLabel.TextXAlignment = Enum.TextXAlignment.Left
-        namesLabel.TextYAlignment = Enum.TextYAlignment.Top
-        namesLabel.TextWrapped = true
-        namesLabel.Parent = roleFrame
-        
-        local textBounds = game:GetService("TextService"):GetTextSize(
-            namesText,
-            12,
-            Enum.Font.Gotham,
-            Vector2.new(roleFrame.AbsoluteSize.X - 10, math.huge)
-        )
-        
-        namesLabel.Size = UDim2.new(1, -10, 0, textBounds.Y)
-        roleFrame.Size = UDim2.new(1, -10, 0, textBounds.Y + 40)
-        
-        roleFrames[roleName] = roleFrame
-    end
-end
-
-local function checkPlayerGroup(player)
-    task.spawn(function()
-        local success, result = pcall(function()
-            return player:GetRankInGroup(TARGET_GROUP_ID)
-        end)
-        
-        if success and result > 0 then
-            local roleSuccess, roleName = pcall(function()
-                return player:GetRoleInGroup(TARGET_GROUP_ID)
-            end)
-            
-            if not roleSuccess then
-                roleName = "Unknown Role"
-            end
-            
-            playerData[player.UserId] = {
-                player = player,
-                rank = result,
-                role = roleName
-            }
-            
-            updateDisplay()
-        else
-            if playerData[player.UserId] then
-                playerData[player.UserId] = nil
-                updateDisplay()
-            end
-        end
-    end)
-end
-
-local function removePlayerEntry(player)
-    if playerData[player.UserId] then
-        playerData[player.UserId] = nil
-        updateDisplay()
-    end
-end
-
-for _, player in ipairs(Players:GetPlayers()) do
-    checkPlayerGroup(player)
-end
-
-Players.PlayerAdded:Connect(function(player)
-    wait(1)
-    checkPlayerGroup(player)
-end)
-
-Players.PlayerRemoving:Connect(function(player)
-    removePlayerEntry(player)
-end)
-
-local refreshButton = Instance.new("TextButton")
-refreshButton.Name = "RefreshButton"
-refreshButton.Size = UDim2.new(0, 60, 0, 25)
-refreshButton.Position = UDim2.new(1, -105, 0, 5)
-refreshButton.BackgroundColor3 = Color3.fromRGB(50, 120, 200)
-refreshButton.BorderSizePixel = 0
-refreshButton.Text = "Refresh"
-refreshButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-refreshButton.TextSize = 12
-refreshButton.Font = Enum.Font.GothamBold
-refreshButton.Parent = titleBar
-
-local refreshCorner = Instance.new("UICorner")
-refreshCorner.CornerRadius = UDim.new(0, 6)
-refreshCorner.Parent = refreshButton
-
-refreshButton.MouseButton1Click:Connect(function()
-    playerData = {}
-    
-    for _, player in ipairs(Players:GetPlayers()) do
-        checkPlayerGroup(player)
-    end
-end)
-
-local dragging = false
-local dragInput, dragStart, startPos
-
-local function update(input)
-    local delta = input.Position - dragStart
-    mainFrame.Position = UDim2.new(
-        startPos.X.Scale,
-        startPos.X.Offset + delta.X,
-        startPos.Y.Scale,
-        startPos.Y.Offset + delta.Y
-    )
-end
-
-titleBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 then
-        dragging = true
-        dragStart = input.Position
-        startPos = mainFrame.Position
-        
-        input.Changed:Connect(function()
-            if input.UserInputState == Enum.UserInputState.End then
-                dragging = false
-            end
-        end)
-    end
-end)
-
-titleBar.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement then
-        dragInput = input
-    end
-end)
-
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        update(input)
-    end
-end)
-
-
