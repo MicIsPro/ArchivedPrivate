@@ -177,12 +177,19 @@ end
 
 local function startTpWalk()
     tpwalking = true
-    local chr = LocalPlayer.Character
-    local hum = chr and chr:FindFirstChildWhichIsA("Humanoid")
     if speedConnection then speedConnection:Disconnect() end
+    
     speedConnection = RunService.Heartbeat:Connect(function(delta)
-        if tpwalking and chr and hum and hum.Parent and hum.MoveDirection.Magnitude > 0 then
-            chr:TranslateBy(hum.MoveDirection * speedMultiplier * delta * 10)
+        if not tpwalking then return end
+        
+        local chr = LocalPlayer.Character
+        if not chr then return end
+        
+        local hum = chr:FindFirstChildWhichIsA("Humanoid")
+        local hrp = chr:FindFirstChild("HumanoidRootPart")
+        
+        if hum and hrp and hum.MoveDirection.Magnitude > 0 then
+            hrp.CFrame = hrp.CFrame + (hum.MoveDirection * speedMultiplier * delta * 10)
         end
     end)
 end
@@ -1161,6 +1168,7 @@ if events then
         fallDamageRemote:Destroy()
     end
 end
+
 
 
 
