@@ -1369,24 +1369,95 @@ local NPCTargetterGroup = Tabs.NPCTargetter:AddLeftGroupbox("Loop Teleport", "cr
 local NPCTargetToggle = NPCTargetterGroup:AddToggle("NPCTargetToggle", {
     Text = "Loop Teleport",
     Default = false,
-    Callback = function(Value)
+Callback = function(Value)
         npcTargetEnabled = Value
         if Value then
             createNPCTargetPlate()
             local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
             local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
             
-            local renderConnection = RunService.RenderStepped:Connect(function()
-                if npcTargetEnabled and npcTargetPlate then
-                    local targetNPC = findNearestNPC()
-                    if targetNPC then
-                        local npcHRP = targetNPC:FindFirstChild("HumanoidRootPart") or targetNPC:FindFirstChild("Torso")
-                        if npcHRP then
-                            local npcPos = npcHRP.Position
-                            local belowPos = Vector3.new(npcPos.X, npcPos.Y - npcTargetDistance, npcPos.Z)
-                            humanoidRootPart.CFrame = CFrame.new(belowPos)
-                            npcTargetPlate.Position = Vector3.new(belowPos.X, belowPos.Y - 2.5, belowPos.Z)
+            local currentTarget = nil
+            local lastHealth = nil
+            local currentDistance = 10
+            local isAttacking = false
+            local lastAttackTime = 0
+            
+            local oldNamecall
+            oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+                local method = getnamecallmethod()
+                if method == "FireServer" and self.Name == "LightAttack" then
+                    isAttacking = true
+                    lastAttackTime = tick()
+                end
+                return oldNamecall(self, ...)
+            end)
+            
+            local renderConnection = RunService.Heartbeat:Connect(function()
+                if not npcTargetEnabled then
+                    renderConnection:Disconnect()
+                    if npcTargetPlate then
+                        npcTargetPlate:Destroy()
+                    end
+                    return
+                end
+                
+                if tick() - lastAttackTime > 0.3 then
+                    isAttacking = false
+                end
+                
+                if isAttacking then
+                    currentDistance = 4
+                else
+                    currentDistance = 10
+                end
+                
+                local shouldSwitchTarget = false
+                
+                if currentTarget and currentTarget:FindFirstChild("Humanoid") then
+                    local npcHumanoid = currentTarget.Humanoid
+                    if npcHumanoid.Health <= 2 then
+                        local Grip = game:GetService("ReplicatedStorage").Events.Grip
+                        for i = 1, 3 do
+                            Grip:FireServer(currentTarget)
+                            wait(0.05)
                         end
+                        shouldSwitchTarget = true
+                    elseif lastHealth and npcHumanoid.Health < lastHealth then
+                        lastHealth = npcHumanoid.Health
+                    else
+                        lastHealth = npcHumanoid.Health
+                    end
+                else
+                    shouldSwitchTarget = true
+                end
+                
+                if shouldSwitchTarget then
+                    currentTarget = nil
+                    local alive = workspace:FindFirstChild("Alive")
+                    if alive then
+                        for _, entity in pairs(alive:GetChildren()) do
+                            if entity:FindFirstChild("Humanoid") then
+                                local humanoid = entity.Humanoid
+                                if humanoid.Health > 2 then
+                                    local player = Players:GetPlayerFromCharacter(entity)
+                                    if not player and entity ~= LocalPlayer.Character then
+                                        currentTarget = entity
+                                        lastHealth = humanoid.Health
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                
+                if currentTarget then
+                    local npcHRP = currentTarget:FindFirstChild("HumanoidRootPart") or currentTarget:FindFirstChild("Torso")
+                    if npcHRP then
+                        local npcPos = npcHRP.Position
+                        local belowPos = Vector3.new(npcPos.X, npcPos.Y - currentDistance, npcPos.Z)
+                        humanoidRootPart.CFrame = CFrame.new(belowPos)
+                        npcTargetPlate.Position = Vector3.new(belowPos.X, belowPos.Y - 2.5, belowPos.Z)
                     end
                 end
             end)
