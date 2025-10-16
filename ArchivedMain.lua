@@ -15,8 +15,6 @@ local Toggles = Library.Toggles
 Library.ForceCheckbox = false
 Library.ShowToggleFrameInKeybinds = true
 
-wait(1)
-
 local tpwalking = false
 local speedMultiplier = 5
 local noclipping = false
@@ -1605,6 +1603,7 @@ ThemeManager:SetFolder("ArchivedPrivate")
 SaveManager:SetFolder("ArchivedPrivate/main")
 
 SaveManager:BuildConfigSection(Tabs["UI Settings"])
+SaveManager:LoadAutoloadConfig()
 
 Players.PlayerAdded:Connect(function(player)
     if espEnabled and player ~= LocalPlayer then
@@ -1639,12 +1638,19 @@ if aliveFolder then
         end
     end)
     
-    aliveFolder.ChildRemoving:Connect(function(entity)
+    aliveFolder.ChildRemoved:Connect(function(entity)
         if npcEspEnabled then
             removeNPCESP(entity)
         end
     end)
 end
+    
+    aliveFolder.ChildRemoving:Connect(function(entity)
+        if npcEspEnabled then
+            removeNPCESP(entity)
+        end
+    end)
+
 Library:OnUnload(function()
     stopTpWalk()
     stopNoclip()
@@ -1665,13 +1671,8 @@ Library:OnUnload(function()
         npcTargetLoop:Disconnect()
         npcTargetLoop = nil
     end
-    if screenGui then
-        screenGui:Destroy()
-    end
 end)
-task.wait(1)
-SaveManager:LoadAutoloadConfig()
--- NOT IN THE LIB
+-- NOT IN THE LIB (FALL DMG DISABLER)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local events = ReplicatedStorage:WaitForChild("Events", 10)
 if events then
