@@ -127,7 +127,7 @@ local itemsToDrop = {
     "Makeshift Handle", "Rope", "Low Quality Blade", "Book", "Organs", "Wiring",
     "Book Of a Grade 9 Fixer", "Book Of a Grade 7 Fixer", "Book Of Zwei Association",
     "Book Of Hana Association", "Book Of Shi Association", "Book Of Stray Dogs",
-    "Scrap Metal", "Gun Parts",
+    "Scrap Metal", "Gun Parts", "Heavy Handle", "Gears", "Handle", "Light Handle", "Dual Handle"
 }
 
 local function teleportToPosition(position)
@@ -1477,4 +1477,5 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         update(input)
     end
 end)
+
 
