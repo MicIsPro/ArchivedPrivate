@@ -59,7 +59,8 @@ local teleportPositions = {
     {name = "Syndicate Office", pos = Vector3.new(-658, -8, 971)},
     {name = "Darius", pos = Vector3.new(130, 30, 851)},
     {name = "Subway", pos = Vector3.new(48, 0, 681)},
-    {name = "Dumpster Guy", pos = Vector3.new(298, 64, -149)}
+    {name = "Dumpster Guy", pos = Vector3.new(298, 64, -149)},
+    {name = "Stranger", pos = Vector3.new(-181, -200, 576)}
 }
 
 local questtps = {
@@ -1640,3 +1641,4 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         update(input)
     end
 end)
+
