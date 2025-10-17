@@ -8,6 +8,7 @@ local espConnections = {}
 local playerFrames = {}
 
 local filteredItems = {
+    "Fused Blade of Ruined Mirror Worlds"
     "Fragment Of Silence", -- Fragments
     "Fragment of Ruined Mirror Worlds",
     "Seed Of Light", -- Misc
@@ -810,5 +811,6 @@ spawn(function()
 end)
 
 updateDisplay()
+
 
 
