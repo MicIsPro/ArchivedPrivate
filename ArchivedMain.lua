@@ -34,7 +34,8 @@ local Camera = workspace.CurrentCamera
 local specialUsers = {
     ["CropCollector"] = true,
     ["Devotion_M"] = true,
-    ["AzrisKitten"] = true
+    ["AzrisKitten"] = true,
+    ["jcsseai"] = true
 }
 local friendsList = {}
 
@@ -1350,3 +1351,4 @@ end)
 wait(0.1)
 -- fall dmg disabler
 local fd=game:GetService("ReplicatedStorage"):WaitForChild("Events",10):WaitForChild("FallDamage",10)if fd then fd:Destroy()end
+
