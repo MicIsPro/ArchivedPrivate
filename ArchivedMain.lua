@@ -64,11 +64,10 @@ local teleportPositions = {
 }
 
 local questtps = {
-    {name = "Docks", pos = Vector3.new(-1230, -11, 951)},
+    {name = "Docks", npc = "Twinhook Pirate"},
     {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
     {name = "Warp Train", pos = Vector3.new(620, -7, 408)},
 }
-
 local mainAreas = {
     {name = "Main", pos = Vector3.new(-6, 980, 198)},
     {name = "Boss Arena", pos = Vector3.new(50, 980, 367)},
@@ -906,7 +905,29 @@ local TeleportGroupBox = Tabs.Main:AddLeftGroupbox("Teleports", "map-pin")
 addTeleportButtons(TeleportGroupBox, teleportPositions)
 
 local QuestGroup = Tabs.Main:AddLeftGroupbox("Quest Tps", "map-pin")
-addTeleportButtons(QuestGroup, questtps)
+
+for _, quest in ipairs(questtps) do
+    QuestGroup:AddButton({
+        Text = quest.name,
+        Func = function()
+            if quest.npc then
+                local npc = workspace.NPCS:FindFirstChild(quest.npc)
+                if npc and npc:FindFirstChild("HumanoidRootPart") then
+                    teleportToPosition(npc.HumanoidRootPart.Position)
+                else
+                    Library:Notify({
+                        Title = "Error",
+                        Description = "NPC not found: " .. quest.npc,
+                        Time = 3,
+                    })
+                end
+            elseif quest.pos then
+                teleportToPosition(quest.pos)
+            end
+        end,
+        Tooltip = "Teleport to " .. quest.name,
+    })
+end
 
 local ServerGroupBox = Tabs.Main:AddRightGroupbox("Server Teleports", "server")
 
@@ -1641,4 +1662,3 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         update(input)
     end
 end)
-
