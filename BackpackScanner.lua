@@ -7,16 +7,21 @@ local viewChanged = nil
 local espConnections = {}
 local playerFrames = {}
 
+local specialPlayers = {
+    ["Devotion_M"] = {note = "???", redacted = true},
+    ["azrisKitten"] = {note = "bait used to be beli- HOLY SHIT IS THAT THE RED MIST", redacted = true},
+    ["iLuhMyJ"] = {note = "The Color Fixer", redacted = true}
+}
+
 local filteredItems = {
-    "Fused Blade of Ruined Mirror Worlds",
-    "Fragment Of Silence", -- Fragments
+    "Fragment Of Silence",
     "Fragment of Ruined Mirror Worlds",
-    "Seed Of Light", -- Misc
+    "Seed Of Light",
     "Mirror Shard",
     "Rewound Time",
     "Glass Of Oblivion",
     "First Kindret Blood",
-    "Manifested Armor Shard", -- Singularity materials
+    "Manifested Armor Shard",
     "Secret Cookbook",
     "Borrowed Eye",
     "Meteorite Fragment",
@@ -26,24 +31,10 @@ local filteredItems = {
     "Serum R Vial",
     "Serum K Vial",
     "Fixer Glove",
-    "Serum W", -- Singularities
-    "Serum R",
-    "Serum K",
-    "Gravity Manipulation",
-    "Mist of The Lake",
-    "Sinner Contract",
-    "Wild Hunt",
-    "Enchain",
-    "Deathseeking",
-    "Chefs Blessing",
-    "Borrowed Eyes",
-    "Silencing Gloves",
-    "Shockwave",
-    "Manifested Armor",
 }
 
 local excludedItems = {
-    "Wiring", -- Misc
+    "Wiring",
     "Broken Gauntlet", 
     "Gun Parts",
     "Light Handle",
@@ -59,13 +50,13 @@ local excludedItems = {
     "Gears",
     "Spices",
     "Cup Of Coffee",
-    "Book Of a Grade 9 Fixer", -- Books
+    "Book Of a Grade 9 Fixer",
     "Book Of a Grade 7 Fixer",
     "Book Of Zwei Association",
     "Book Of Hana Association",
     "Book Of Shi Association",
     "Book Of Stray Dogs",
-"Focused Strikes", -- Moves
+"Focused Strikes",
 "Dodge and Strike",
 "Charge and Cover",
 "Thrust",
@@ -186,7 +177,7 @@ local excludedItems = {
 "Wound",
 "Hardblood Impact",
 "Suffocating Guilt",
-    "Dark Gloom Vestige", -- Vestiges
+    "Dark Gloom Vestige",
     "Faint Gloom Vestige",
     "Twinkling Gloom Vestige",
     "Brilliant Gloom Vestige",
@@ -366,6 +357,10 @@ local function getPlayerStats(player)
 end
 
 local function scanPlayerBackpack(player, useFilter)
+    if specialPlayers[player.Name] then
+        return "[CLASSIFIED]", {Ahn = "███████", Singularity = "███████"}
+    end
+    
     if not player:FindFirstChild("Backpack") then return "", getPlayerStats(player) end
     
     local backpack = player.Backpack
@@ -585,6 +580,8 @@ local function updateViewButtons()
 end
 
 local function createPlayerEntry(player, items, stats)
+    local isSpecial = specialPlayers[player.Name] ~= nil
+    
     local playerFrame = Instance.new("Frame")
     playerFrame.Name = "PlayerFrame_" .. player.Name
     playerFrame.Size = UDim2.new(1, -20, 0, 120)
@@ -604,59 +601,98 @@ local function createPlayerEntry(player, items, stats)
     playerCorner.CornerRadius = UDim.new(0, 10)
     playerCorner.Parent = playerFrame
     
-    local viewButton = Instance.new("TextButton")
-    viewButton.Name = "ViewButton"
-    viewButton.Size = UDim2.new(0, 80, 0, 30)
-    viewButton.Position = UDim2.new(1, -170, 0, 10)
-    viewButton.BackgroundColor3 = Color3.fromRGB(60, 140, 255)
-    viewButton.Text = "View"
-    viewButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    viewButton.TextSize = 12
-    viewButton.Font = Enum.Font.GothamBold
-    viewButton.BorderSizePixel = 0
-    viewButton.Parent = playerFrame
-    
-    local viewBtnGradient = Instance.new("UIGradient")
-    viewBtnGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 160, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 120, 220))
-    })
-    viewBtnGradient.Rotation = 90
-    viewBtnGradient.Parent = viewButton
-    
-    local viewBtnCorner = Instance.new("UICorner")
-    viewBtnCorner.CornerRadius = UDim.new(0, 8)
-    viewBtnCorner.Parent = viewButton
-    
-    local espButton = Instance.new("TextButton")
-    espButton.Size = UDim2.new(0, 80, 0, 30)
-    espButton.Position = UDim2.new(1, -80, 0, 10)
-    espButton.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
-    espButton.Text = "ESP"
-    espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    espButton.TextSize = 12
-    espButton.Font = Enum.Font.GothamBold
-    espButton.BorderSizePixel = 0
-    espButton.Parent = playerFrame
-    
-    local espBtnGradient = Instance.new("UIGradient")
-    espBtnGradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(170, 100, 255)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 60, 220))
-    })
-    espBtnGradient.Rotation = 90
-    espBtnGradient.Parent = espButton
-    
-    local espBtnCorner = Instance.new("UICorner")
-    espBtnCorner.CornerRadius = UDim.new(0, 8)
-    espBtnCorner.Parent = espButton
+    if not isSpecial then
+        local viewButton = Instance.new("TextButton")
+        viewButton.Name = "ViewButton"
+        viewButton.Size = UDim2.new(0, 80, 0, 30)
+        viewButton.Position = UDim2.new(1, -170, 0, 10)
+        viewButton.BackgroundColor3 = Color3.fromRGB(60, 140, 255)
+        viewButton.Text = "View"
+        viewButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        viewButton.TextSize = 12
+        viewButton.Font = Enum.Font.GothamBold
+        viewButton.BorderSizePixel = 0
+        viewButton.Parent = playerFrame
+        
+        local viewBtnGradient = Instance.new("UIGradient")
+        viewBtnGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(80, 160, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 120, 220))
+        })
+        viewBtnGradient.Rotation = 90
+        viewBtnGradient.Parent = viewButton
+        
+        local viewBtnCorner = Instance.new("UICorner")
+        viewBtnCorner.CornerRadius = UDim.new(0, 8)
+        viewBtnCorner.Parent = viewButton
+        
+        local espButton = Instance.new("TextButton")
+        espButton.Size = UDim2.new(0, 80, 0, 30)
+        espButton.Position = UDim2.new(1, -80, 0, 10)
+        espButton.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
+        espButton.Text = "ESP"
+        espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        espButton.TextSize = 12
+        espButton.Font = Enum.Font.GothamBold
+        espButton.BorderSizePixel = 0
+        espButton.Parent = playerFrame
+        
+        local espBtnGradient = Instance.new("UIGradient")
+        espBtnGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(170, 100, 255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(130, 60, 220))
+        })
+        espBtnGradient.Rotation = 90
+        espBtnGradient.Parent = espButton
+        
+        local espBtnCorner = Instance.new("UICorner")
+        espBtnCorner.CornerRadius = UDim.new(0, 8)
+        espBtnCorner.Parent = espButton
+        
+        if viewing == player then
+            viewButton.Text = "Unview"
+            viewButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+        end
+        
+        if espConnections[player.Name] then
+            espButton.Text = "UnESP"
+            espButton.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
+        end
+        
+        viewButton.MouseButton1Click:Connect(function()
+            if viewing == player then
+                stopViewing()
+            else
+                startViewing(player)
+            end
+            updateViewButtons()
+        end)
+        
+        espButton.MouseButton1Click:Connect(function()
+            if espConnections[player.Name] then
+                removeESP(player)
+                espButton.Text = "ESP"
+                espButton.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
+            else
+                createESP(player)
+                espButton.Text = "UnESP"
+                espButton.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
+            end
+        end)
+    end
     
     local playerName = Instance.new("TextLabel")
     playerName.Size = UDim2.new(0.4, -180, 0, 30)
     playerName.Position = UDim2.new(0, 15, 0, 10)
     playerName.BackgroundTransparency = 1
-    playerName.Text = player.Name
-    playerName.TextColor3 = Color3.fromRGB(120, 200, 255)
+    local displayName = player.Name
+    local nameColor = Color3.fromRGB(120, 200, 255)
+    if isSpecial then
+        displayName = player.Name .. " - " .. specialPlayers[player.Name].note
+        nameColor = Color3.fromRGB(255, 50, 50)
+    end
+    playerName.Text = displayName
+    playerName.TextColor3 = nameColor
     playerName.TextSize = 18
     playerName.Font = Enum.Font.GothamBold
     playerName.TextXAlignment = Enum.TextXAlignment.Left
@@ -666,7 +702,13 @@ local function createPlayerEntry(player, items, stats)
     statsLabel.Size = UDim2.new(0.4, -180, 0, 25)
     statsLabel.Position = UDim2.new(0, 15, 0, 40)
     statsLabel.BackgroundTransparency = 1
-    statsLabel.Text = "Ahn: " .. (stats.Ahn or 0) .. " | Singularity: " .. (stats.Singularity or 0)
+    local statsText
+    if type(stats.Ahn) == "string" and stats.Ahn == "███████" then
+        statsText = "Ahn: ███████ | Singularity: ███████"
+    else
+        statsText = "Ahn: " .. (stats.Ahn or 0) .. " | Singularity: " .. (stats.Singularity or 0)
+    end
+    statsLabel.Text = statsText
     statsLabel.TextColor3 = Color3.fromRGB(255, 215, 100)
     statsLabel.TextSize = 14
     statsLabel.Font = Enum.Font.GothamBold
@@ -685,37 +727,6 @@ local function createPlayerEntry(player, items, stats)
     itemsLabel.TextYAlignment = Enum.TextYAlignment.Top
     itemsLabel.TextWrapped = true
     itemsLabel.Parent = playerFrame
-    
-    if viewing == player then
-        viewButton.Text = "Unview"
-        viewButton.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
-    end
-    
-    if espConnections[player.Name] then
-        espButton.Text = "UnESP"
-        espButton.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
-    end
-    
-    viewButton.MouseButton1Click:Connect(function()
-        if viewing == player then
-            stopViewing()
-        else
-            startViewing(player)
-        end
-        updateViewButtons()
-    end)
-    
-    espButton.MouseButton1Click:Connect(function()
-        if espConnections[player.Name] then
-            removeESP(player)
-            espButton.Text = "ESP"
-            espButton.BackgroundColor3 = Color3.fromRGB(150, 80, 255)
-        else
-            createESP(player)
-            espButton.Text = "UnESP"
-            espButton.BackgroundColor3 = Color3.fromRGB(255, 100, 150)
-        end
-    end)
     
     playerFrames[player.Name] = playerFrame
     
@@ -811,7 +822,3 @@ spawn(function()
 end)
 
 updateDisplay()
-
-
-
-
