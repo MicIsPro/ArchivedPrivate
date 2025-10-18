@@ -10,7 +10,8 @@ local playerFrames = {}
 local specialPlayers = {
     ["Devotion_M"] = {note = "???", redacted = true},
     ["azrisKitten"] = {note = "bait used to be beli- HOLY SHIT IS THAT THE RED MIST", redacted = true},
-    ["iLuhMyJ"] = {note = "The Color Fixer", redacted = true}
+    ["iLuhMyJ"] = {note = "The Color Fixer", redacted = true},
+    ["jcsseai"] = {note = "???", redacted = true}
 }
 
 local filteredItems = {
@@ -822,3 +823,4 @@ spawn(function()
 end)
 
 updateDisplay()
+
