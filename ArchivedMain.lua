@@ -64,7 +64,7 @@ local teleportPositions = {
 }
 
 local questtps = {
-    {name = "Docks", npc = "Twinhook Pirate"},
+    {name = "Docks Delivery", npc = "Twinhook Pirate"},
     {name = "L.Corp", pos = Vector3.new(1005, 27, 1150)},
     {name = "Warp Train", pos = Vector3.new(620, -7, 408)},
 }
@@ -1662,3 +1662,4 @@ game:GetService("UserInputService").InputChanged:Connect(function(input)
         update(input)
     end
 end)
+
