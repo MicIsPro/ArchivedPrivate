@@ -1573,5 +1573,7 @@ LocalPlayer.CharacterAdded:Connect(function(character)
         end)
     end
 end)
+wait(0.5)
+print("Happy Niggers day with Devotion's private v1")
 
 
