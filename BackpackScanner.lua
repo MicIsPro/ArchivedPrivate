@@ -17,6 +17,7 @@ local specialPlayers = {
 local filteredItems = {
     "Fragment Of Silence",
     "Fragment of Ruined Mirror Worlds",
+    "Fused Blade of Ruined Mirror Worlds",
     "Seed Of Light",
     "Mirror Shard",
     "Rewound Time",
@@ -32,6 +33,11 @@ local filteredItems = {
     "Serum R Vial",
     "Serum K Vial",
     "Fixer Glove",
+    "Arbiter Essence",
+    "Essence of Destruction",
+    "Busted Clock",
+    "Seeker's Nail",
+    "Silencing glove"
 }
 
 local excludedItems = {
@@ -823,4 +829,5 @@ spawn(function()
 end)
 
 updateDisplay()
+
 
