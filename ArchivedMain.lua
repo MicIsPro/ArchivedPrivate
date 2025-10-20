@@ -1352,6 +1352,20 @@ wait(0.1)
 -- fall dmg disabler
 local fd=game:GetService("ReplicatedStorage"):WaitForChild("Events",10):WaitForChild("FallDamage",10)if fd then fd:Destroy()end
 -- admin commands
+--[[
+-- > Commmands list < --
+;freeze [displayname] - Anchors all parts of the target player's character, preventing them from moving
+;unfreeze [displayname] - Removes the anchor from all parts, allowing the player to move again
+;bring [displayname] - Teleports the target player to the admin's location (3 studs in front)
+;kill [displayname] - Breaks all joints in the target player's character, killing them
+;kick [displayname] [reason] - Kicks the target player from the game with an optional reason message
+;team [displayname] - Makes the target player join the admin's group (sends /joingroup command)
+;create [displayname] - Makes the target player create a group (sends /creategroup command)
+;accept [displayname] - Makes the target player accept group requests (sends /acceptgrouprequests command)
+
+Special wildcard: Use . as the displayname to target all players running the script
+Partial matching: You can type partial names (e.g., joh matches john)
+]]
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
@@ -1393,28 +1407,6 @@ local function registerScriptUser()
     end
 end
 
-local function getPlayerByDisplayName(displayName)
-    if displayName == "." then
-        local targets = {}
-        for _, playerName in pairs(scriptUsers) do
-            local player = Players:FindFirstChild(playerName)
-            if player then
-                table.insert(targets, player)
-            end
-        end
-        return targets
-    end
-    
-    for _, player in pairs(Players:GetPlayers()) do
-        if player:FindFirstChild("Data") and player.Data:FindFirstChild("DisplayName") then
-            if string.lower(player.Data.DisplayName.Value) == string.lower(displayName) then
-                return {player}
-            end
-        end
-    end
-    return {}
-end
-
 local function isTargetMe(displayName)
     if displayName == "." then
         for _, playerName in pairs(scriptUsers) do
@@ -1426,7 +1418,9 @@ local function isTargetMe(displayName)
     end
     
     if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("DisplayName") then
-        return string.lower(LocalPlayer.Data.DisplayName.Value) == string.lower(displayName)
+        local myDisplayName = string.lower(LocalPlayer.Data.DisplayName.Value)
+        local targetName = string.lower(displayName)
+        return string.sub(myDisplayName, 1, #targetName) == targetName
     end
     return false
 end
