@@ -486,11 +486,11 @@ tabFrame.BackgroundTransparency = 1
 tabFrame.Parent = mainFrame
 
 local filteredTab = Instance.new("TextButton")
-filteredTab.Size = UDim2.new(0, 180, 1, 0)
+filteredTab.Size = UDim2.new(0, 140, 1, 0)
 filteredTab.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
 filteredTab.Text = "Filtered Items"
 filteredTab.TextColor3 = Color3.fromRGB(255, 255, 255)
-filteredTab.TextSize = 16
+filteredTab.TextSize = 14
 filteredTab.Font = Enum.Font.GothamBold
 filteredTab.BorderSizePixel = 0
 filteredTab.Parent = tabFrame
@@ -508,12 +508,12 @@ filteredTabCorner.CornerRadius = UDim.new(0, 12)
 filteredTabCorner.Parent = filteredTab
 
 local fullBackpackTab = Instance.new("TextButton")
-fullBackpackTab.Size = UDim2.new(0, 180, 1, 0)
-fullBackpackTab.Position = UDim2.new(0, 200, 0, 0)
+fullBackpackTab.Size = UDim2.new(0, 140, 1, 0)
+fullBackpackTab.Position = UDim2.new(0, 155, 0, 0)
 fullBackpackTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
 fullBackpackTab.Text = "Full Backpacks"
 fullBackpackTab.TextColor3 = Color3.fromRGB(180, 180, 180)
-fullBackpackTab.TextSize = 16
+fullBackpackTab.TextSize = 14
 fullBackpackTab.Font = Enum.Font.GothamBold
 fullBackpackTab.BorderSizePixel = 0
 fullBackpackTab.Parent = tabFrame
@@ -529,6 +529,29 @@ fullTabGradient.Parent = fullBackpackTab
 local fullTabCorner = Instance.new("UICorner")
 fullTabCorner.CornerRadius = UDim.new(0, 12)
 fullTabCorner.Parent = fullBackpackTab
+
+local ahnTab = Instance.new("TextButton")
+ahnTab.Size = UDim2.new(0, 140, 1, 0)
+ahnTab.Position = UDim2.new(0, 310, 0, 0)
+ahnTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+ahnTab.Text = "Ahn"
+ahnTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+ahnTab.TextSize = 14
+ahnTab.Font = Enum.Font.GothamBold
+ahnTab.BorderSizePixel = 0
+ahnTab.Parent = tabFrame
+
+local ahnTabGradient = Instance.new("UIGradient")
+ahnTabGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(50, 50, 60)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 30, 40))
+})
+ahnTabGradient.Rotation = 90
+ahnTabGradient.Parent = ahnTab
+
+local ahnTabCorner = Instance.new("UICorner")
+ahnTabCorner.CornerRadius = UDim.new(0, 12)
+ahnTabCorner.Parent = ahnTab
 
 local contentFrame = Instance.new("Frame")
 contentFrame.Size = UDim2.new(1, -40, 1, -150)
@@ -558,7 +581,7 @@ scrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80, 120, 255)
 scrollFrame.Parent = contentFrame
 
 local listLayout = Instance.new("UIListLayout")
-listLayout.SortOrder = Enum.SortOrder.Name
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Padding = UDim.new(0, 8)
 listLayout.Parent = scrollFrame
 
@@ -586,7 +609,7 @@ local function updateViewButtons()
     end
 end
 
-local function createPlayerEntry(player, items, stats)
+local function createPlayerEntry(player, items, stats, rank)
     local isSpecial = specialPlayers[player.Name] ~= nil
     
     local playerFrame = Instance.new("Frame")
@@ -594,6 +617,7 @@ local function createPlayerEntry(player, items, stats)
     playerFrame.Size = UDim2.new(1, -20, 0, 120)
     playerFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 55)
     playerFrame.BorderSizePixel = 0
+    playerFrame.LayoutOrder = rank or 0
     playerFrame.Parent = scrollFrame
     
     local playerGradient = Instance.new("UIGradient")
@@ -713,7 +737,11 @@ local function createPlayerEntry(player, items, stats)
     if type(stats.Ahn) == "string" and stats.Ahn == "███████" then
         statsText = "Ahn: ███████ | Singularity: ███████"
     else
-        statsText = "Ahn: " .. (stats.Ahn or 0) .. " | Singularity: " .. (stats.Singularity or 0)
+        if currentTab == "ahn" then
+            statsText = "Ahn: " .. (stats.Ahn or 0)
+        else
+            statsText = "Ahn: " .. (stats.Ahn or 0) .. " | Singularity: " .. (stats.Singularity or 0)
+        end
     end
     statsLabel.Text = statsText
     statsLabel.TextColor3 = Color3.fromRGB(255, 215, 100)
@@ -722,18 +750,20 @@ local function createPlayerEntry(player, items, stats)
     statsLabel.TextXAlignment = Enum.TextXAlignment.Left
     statsLabel.Parent = playerFrame
     
-    local itemsLabel = Instance.new("TextLabel")
-    itemsLabel.Size = UDim2.new(0.6, -190, 1, -20)
-    itemsLabel.Position = UDim2.new(0.4, 15, 0, 10)
-    itemsLabel.BackgroundTransparency = 1
-    itemsLabel.Text = items == "" and "No items found" or items
-    itemsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-    itemsLabel.TextSize = 12
-    itemsLabel.Font = Enum.Font.Gotham
-    itemsLabel.TextXAlignment = Enum.TextXAlignment.Left
-    itemsLabel.TextYAlignment = Enum.TextYAlignment.Top
-    itemsLabel.TextWrapped = true
-    itemsLabel.Parent = playerFrame
+    if currentTab ~= "ahn" then
+        local itemsLabel = Instance.new("TextLabel")
+        itemsLabel.Size = UDim2.new(0.6, -190, 1, -20)
+        itemsLabel.Position = UDim2.new(0.4, 15, 0, 10)
+        itemsLabel.BackgroundTransparency = 1
+        itemsLabel.Text = items == "" and "No items found" or items
+        itemsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+        itemsLabel.TextSize = 12
+        itemsLabel.Font = Enum.Font.Gotham
+        itemsLabel.TextXAlignment = Enum.TextXAlignment.Left
+        itemsLabel.TextYAlignment = Enum.TextYAlignment.Top
+        itemsLabel.TextWrapped = true
+        itemsLabel.Parent = playerFrame
+    end
     
     playerFrames[player.Name] = playerFrame
     
@@ -748,11 +778,38 @@ local function updateDisplay()
     end
     playerFrames = {}
     
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= Players.LocalPlayer then
-            local items, stats = scanPlayerBackpack(player, currentTab == "filtered")
-            if items ~= "" or currentTab == "full" then
-                createPlayerEntry(player, items, stats)
+    if currentTab == "ahn" then
+        local playerDataList = {}
+        
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= Players.LocalPlayer then
+                local stats = getPlayerStats(player)
+                local ahnValue = 0
+                if type(stats.Ahn) == "number" then
+                    ahnValue = stats.Ahn
+                end
+                table.insert(playerDataList, {
+                    player = player,
+                    stats = stats,
+                    ahn = ahnValue
+                })
+            end
+        end
+        
+        table.sort(playerDataList, function(a, b)
+            return a.ahn > b.ahn
+        end)
+        
+        for rank, data in ipairs(playerDataList) do
+            createPlayerEntry(data.player, "", data.stats, rank)
+        end
+    else
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= Players.LocalPlayer then
+                local items, stats = scanPlayerBackpack(player, currentTab == "filtered")
+                if items ~= "" or currentTab == "full" then
+                    createPlayerEntry(player, items, stats)
+                end
             end
         end
     end
@@ -766,6 +823,8 @@ filteredTab.MouseButton1Click:Connect(function()
     filteredTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     fullBackpackTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     fullBackpackTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+    ahnTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    ahnTab.TextColor3 = Color3.fromRGB(180, 180, 180)
     updateDisplay()
 end)
 
@@ -775,6 +834,19 @@ fullBackpackTab.MouseButton1Click:Connect(function()
     fullBackpackTab.TextColor3 = Color3.fromRGB(255, 255, 255)
     filteredTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
     filteredTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+    ahnTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    ahnTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+    updateDisplay()
+end)
+
+ahnTab.MouseButton1Click:Connect(function()
+    currentTab = "ahn"
+    ahnTab.BackgroundColor3 = Color3.fromRGB(60, 120, 255)
+    ahnTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    filteredTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    filteredTab.TextColor3 = Color3.fromRGB(180, 180, 180)
+    fullBackpackTab.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    fullBackpackTab.TextColor3 = Color3.fromRGB(180, 180, 180)
     updateDisplay()
 end)
 
@@ -829,5 +901,3 @@ spawn(function()
 end)
 
 updateDisplay()
-
-
