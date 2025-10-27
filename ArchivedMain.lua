@@ -101,7 +101,7 @@ local function ValidateKey(key)
     
     if boundHWID == "" then
         ValidKeys[key] = hwid
-        LogToDiscord(key, hwid, true, "Key successfully bound to HWID")
+        LogToDiscord(key, hwid, true, "Key awaiting HWID bind")
         return true, "Key validated and bound to your device!"
     end
     
@@ -315,4 +315,5 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
+
 
