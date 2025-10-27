@@ -78,7 +78,7 @@ local function CheckHWIDMatch()
 end
 
 local function LoadMainScript()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/ArchivedMain.lua"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/Main.lua"))()
 end
 
 local function ValidateKey(key)
@@ -307,3 +307,4 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
+
