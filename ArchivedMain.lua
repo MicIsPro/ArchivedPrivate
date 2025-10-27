@@ -5,8 +5,9 @@ local Player = Players.LocalPlayer :: Player
 
 local ValidKeys = {
     ["JSE6D598TSLKA4ERT89AERTHTFGAE56"] = "EDB6D544-4C2F-4BC9-BCD4-266BC94809FE", -- my key
-    ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = "6EB9C457-9FC8-4E0B-B90F-5C9DA551F5F8", -- fabis key
+    ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = "6EB9C457-9FC8-4E0B-B90F-5C9DA551F5F8", -- Fabi key
     ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = "E8DC9AAB-A48E-4C07-B17A-269865411193", -- Zarc key
+    ["XMNB54389DFCGZDMBTWEE4RGFASEFLB"] = ""
 }
 
 local DiscordWebhook = "https://discord.com/api/webhooks/1432346858629496854/-cm23r_TiuqYzOr75kfdzkrihcPi883pOQz58mFjpK0DL9mNzgSk82KpeuCMfzlff241"
@@ -315,6 +316,7 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
+
 
 
 
