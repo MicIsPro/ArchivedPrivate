@@ -29,6 +29,7 @@ local function LogToDiscord(key, hwid, success, reason)
     local timestamp = os.date("%Y-%m-%d %H:%M:%S")
     local status = success and "✓ SUCCESS" or "✗ FAILED"
     local isKeyBound = reason == "Key successfully bound to HWID"
+    local isAwaitingBind = reason == "Key awaiting HWID bind"
     
     if DiscordWebhook ~= "" then
         pcall(function()
@@ -45,7 +46,7 @@ local function LogToDiscord(key, hwid, success, reason)
             end
             
             local embed = {
-                ["content"] = isKeyBound and "<@523218932568686593>" or nil,
+                ["content"] = (isKeyBound or isAwaitingBind) and "<@523218932568686593>" or nil,
                 ["embeds"] = {{
                     ["title"] = "🔐 Key System Log",
                     ["color"] = success and 3066993 or 15158332,
@@ -316,7 +317,3 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
-
-
-
-
