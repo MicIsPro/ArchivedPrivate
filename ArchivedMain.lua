@@ -1,11 +1,12 @@
-local Players = game:GetService("Players")
-local HttpService = game:GetService("HttpService")
-local StarterGui = game:GetService("StarterGui")
-local Player = Players.LocalPlayer
+local Players = game:GetService("Players") :: Players
+local HttpService = game:GetService("HttpService") :: HttpService
+local StarterGui = game:GetService("StarterGui") :: StarterGui
+local Player = Players.LocalPlayer :: Player
 
 local ValidKeys = {
     ["JSE6D598TSLKA4ERT89AERTHTFGAE56"] = "EDB6D544-4C2F-4BC9-BCD4-266BC94809FE", -- my key
     ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = "6EB9C457-9FC8-4E0B-B90F-5C9DA551F5F8", -- fabis key
+    ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = "", -- free key
 }
 
 local DiscordWebhook = "https://discord.com/api/webhooks/1432346858629496854/-cm23r_TiuqYzOr75kfdzkrihcPi883pOQz58mFjpK0DL9mNzgSk82KpeuCMfzlff241"
@@ -26,6 +27,7 @@ end
 local function LogToDiscord(key, hwid, success, reason)
     local timestamp = os.date("%Y-%m-%d %H:%M:%S")
     local status = success and "✓ SUCCESS" or "✗ FAILED"
+    local isKeyBound = reason == "Key successfully bound to HWID"
     
     if DiscordWebhook ~= "" then
         pcall(function()
@@ -42,7 +44,7 @@ local function LogToDiscord(key, hwid, success, reason)
             end
             
             local embed = {
-                ["content"] = nil,
+                ["content"] = isKeyBound and "<@523218932568686593>" or nil,
                 ["embeds"] = {{
                     ["title"] = "🔐 Key System Log",
                     ["color"] = success and 3066993 or 15158332,
@@ -78,7 +80,13 @@ local function CheckHWIDMatch()
 end
 
 local function LoadMainScript()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/Main.lua"))()
+    local success, result = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/MicIsPro/ArchivedPrivate/refs/heads/main/Main.lua")
+    end)
+    
+    if success and result then
+        loadstring(result)()
+    end
 end
 
 local function ValidateKey(key)
@@ -307,4 +315,3 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
-
