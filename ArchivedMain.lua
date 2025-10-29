@@ -4,10 +4,11 @@ local StarterGui = game:GetService("StarterGui") :: StarterGui
 local Player = Players.LocalPlayer :: Player
 
 local ValidKeys = {
-    ["JSE6D598TSLKA4ERT89AERTHTFGAE56"] = "EDB6D544-4C2F-4BC9-BCD4-266BC94809FE", -- my key
-    ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = "6EB9C457-9FC8-4E0B-B90F-5C9DA551F5F8", -- Fabi key
-    ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = "E8DC9AAB-A48E-4C07-B17A-269865411193", -- Zarc key
-    ["XMNB54389DFCGZDMBTWEE4RGFASEFLB"] = "3587044F-092C-41D5-A61B-778D18618386", -- Sembrell key
+    ["JSE6D598TSLKA4ERT89AERTHTFGAE56"] = {hwid = "EDB6D544-4C2F-4BC9-BCD4-266BC94809FE", name = "Mic's key"},
+    ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = {hwid = "6EB9C457-9FC8-4E0B-B90F-5C9DA551F5F8", name = "Fabi's key"},
+    ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = {hwid = "E8DC9AAB-A48E-4C07-B17A-269865411193", name = "Zarc's key"},
+    ["XMNB54389DFCGZDMBTWEE4RGFASEFLB"] = {hwid = "3587044F-092C-41D5-A61B-778D18618386", name = "Sembrell's key"},
+    ["P9Q2N5W8R3T6Y1M4K7J0H2V5X8C3F6L"] = {hwid = "", name = "DustPuff's key"},
 }
 
 local DiscordWebhook = "https://discord.com/api/webhooks/1432346858629496854/-cm23r_TiuqYzOr75kfdzkrihcPi883pOQz58mFjpK0DL9mNzgSk82KpeuCMfzlff241"
@@ -25,7 +26,7 @@ local function GetHWID()
     return hwid
 end
 
-local function LogToDiscord(key, hwid, success, reason)
+local function LogToDiscord(key, keyName, hwid, success, reason)
     local timestamp = os.date("%Y-%m-%d %H:%M:%S")
     local status = success and "✓ SUCCESS" or "✗ FAILED"
     local isKeyBound = reason == "Key successfully bound to HWID"
@@ -36,6 +37,7 @@ local function LogToDiscord(key, hwid, success, reason)
             local fields = {
                 {["name"] = "Player", ["value"] = Player.Name, ["inline"] = true},
                 {["name"] = "Status", ["value"] = status, ["inline"] = true},
+                {["name"] = "Key Name", ["value"] = keyName or "Unknown", ["inline"] = true},
                 {["name"] = "Key", ["value"] = "||" .. (key or "AUTO-LOAD") .. "||", ["inline"] = false},
                 {["name"] = "HWID", ["value"] = "||" .. hwid .. "||", ["inline"] = false},
                 {["name"] = "Timestamp", ["value"] = timestamp, ["inline"] = false}
@@ -72,13 +74,13 @@ end
 local function CheckHWIDMatch()
     local hwid = GetHWID()
     
-    for key, boundHWID in pairs(ValidKeys) do
-        if boundHWID == hwid then
-            return true, key
+    for key, data in pairs(ValidKeys) do
+        if data.hwid == hwid then
+            return true, key, data.name
         end
     end
     
-    return false, nil
+    return false, nil, nil
 end
 
 local function LoadMainScript()
@@ -95,23 +97,25 @@ local function ValidateKey(key)
     local hwid = GetHWID()
     
     if ValidKeys[key] == nil then
-        LogToDiscord(key, hwid, false, "Key does not exist")
+        LogToDiscord(key, "Unknown", hwid, false, "Key does not exist")
         return false, "Invalid key"
     end
     
-    local boundHWID = ValidKeys[key]
+    local keyData = ValidKeys[key]
+    local boundHWID = keyData.hwid
+    local keyName = keyData.name
     
     if boundHWID == "" then
-        ValidKeys[key] = hwid
-        LogToDiscord(key, hwid, true, "Key awaiting HWID bind")
+        ValidKeys[key].hwid = hwid
+        LogToDiscord(key, keyName, hwid, true, "Key awaiting HWID bind")
         return true, "Key validated and bound to your device!"
     end
     
     if boundHWID == hwid then
-        LogToDiscord(key, hwid, true, "HWID matched")
+        LogToDiscord(key, keyName, hwid, true, "HWID matched")
         return true, "Key validated successfully!"
     else
-        LogToDiscord(key, hwid, false, "HWID mismatch - Key bound to different device")
+        LogToDiscord(key, keyName, hwid, false, "HWID mismatch - Key bound to different device")
         return false, "This key is bound to another device"
     end
 end
@@ -306,15 +310,14 @@ local function CreateKeyGUI()
     KeyInput:CaptureFocus()
 end
 
-local isHWIDMatch, matchedKey = CheckHWIDMatch()
+local isHWIDMatch, matchedKey, matchedKeyName = CheckHWIDMatch()
 
 if isHWIDMatch then
     local hwid = GetHWID()
-    LogToDiscord(matchedKey, hwid, true, "Auto-loaded via HWID match")
+    LogToDiscord(matchedKey, matchedKeyName, hwid, true, "Auto-loaded via HWID match")
     SendNotification("Key System", "✓ HWID recognized - Loading script automatically...", 3)
     LoadMainScript()
 else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
-
