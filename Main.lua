@@ -3,6 +3,7 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local TeleportService = game:GetService("TeleportService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 
 local repo = "https://raw.githubusercontent.com/deividcomsono/Obsidian/main/"
@@ -282,7 +283,7 @@ local function autoDrop()
         end
         return items
     end
-    local DropItem = game:GetService("ReplicatedStorage").Events.DropItem
+    local DropItem = ReplicatedStorage.Events.DropItem
     for _, itemName in ipairs(itemsToDrop) do
         local items = findAllItems(itemName)
         for _, item in ipairs(items) do
@@ -824,7 +825,6 @@ ToolsGroupBox:AddLabel("Parry Keybind"):AddKeyPicker("ParryKeybind", {
     Text = "Parry",
     NoUI = false,
     Callback = function()
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local ParryActivate = ReplicatedStorage.Events.ParryActivate
         ParryActivate:FireServer()
     end,
@@ -834,12 +834,82 @@ ToolsGroupBox:AddLabel("Emotion Level Keybind"):AddKeyPicker("EmotionLevelKeybin
     Text = "Emotion Level",
     NoUI = false,
     Callback = function()
-        local ReplicatedStorage = game:GetService("ReplicatedStorage")
         local EmotionLevelIncrease = ReplicatedStorage.Events.EmotionLevelIncrease
         EmotionLevelIncrease:FireServer(2)
     end,
 })
 
+local isInstantAttacking = false
+local instantAttackConnection = nil
+
+local function executeAttack()
+    if not LocalPlayer.Character then return end
+    
+    local weapon = LocalPlayer.Character:FindFirstChild("Weapon")
+    if not weapon or not weapon.Value then return end
+    
+    local weaponInfo = ReplicatedStorage.WeaponINFO:FindFirstChild(weapon.Value)
+    if not weaponInfo then return end
+    
+    local attackAnim = weaponInfo:FindFirstChild("AttackAnimation1")
+    if not attackAnim then return end
+    
+    local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+    if not humanoid then return end
+    
+    local animator = humanoid:FindFirstChild("Animator")
+    if not animator then return end
+    
+    local track = animator:LoadAnimation(attackAnim)
+    track:Play()
+    
+    local timeUntilHitbox = weaponInfo:FindFirstChild("TimeUntilHitbox")
+    if timeUntilHitbox and timeUntilHitbox.Value then
+        track.TimePosition = timeUntilHitbox.Value
+    end
+end
+
+local function startInstantAttack()
+    isInstantAttacking = true
+    if instantAttackConnection then instantAttackConnection:Disconnect() end
+    instantAttackConnection = RunService.Heartbeat:Connect(function()
+        if isInstantAttacking then
+            executeAttack()
+            task.wait(0.1)
+        end
+    end)
+end
+
+local function stopInstantAttack()
+    isInstantAttacking = false
+    if instantAttackConnection then
+        instantAttackConnection:Disconnect()
+        instantAttackConnection = nil
+    end
+end
+
+local InstantAttackToggle = ToolsGroupBox:AddToggle("InstantAttack", {
+    Text = "Instant Attack",
+    Default = false,
+    Callback = function(Value)
+        if Value then
+            startInstantAttack()
+        else
+            stopInstantAttack()
+        end
+    end,
+})
+
+InstantAttackToggle:AddKeyPicker("InstantAttackKeybind", {
+    Text = "Instant Attack",
+    Mode = "Toggle",
+    Callback = function()
+        InstantAttackToggle:SetValue(not Toggles.InstantAttack.Value)
+    end,
+})
+ToolsGroupBox:AddDivider()
+ToolsGroupBox:AddLabel("Credits to dust_puffs for the")
+ToolsGroupBox:AddLabel("instant attack method.")
 ToolsGroupBox:AddDivider()
 
 ToolsGroupBox:AddButton({
@@ -1218,6 +1288,10 @@ Library:OnUnload(function()
         infJump:Disconnect()
         infJump = nil
     end
+if instantAttackConnection then
+    instantAttackConnection:Disconnect()
+    instantAttackConnection = nil
+end
     
     local character = LocalPlayer.Character
     if character then
@@ -1366,10 +1440,7 @@ local fd=game:GetService("ReplicatedStorage"):WaitForChild("Events",10):WaitForC
 Special wildcard: Use . as the displayname to target all players running the script
 Partial matching: You can type partial names (e.g., joh matches john)
 ]]
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TextChatService = game:GetService("TextChatService")
-local LocalPlayer = Players.LocalPlayer
 
 local adminUsers = {
     "Devotion_M",
@@ -1567,7 +1638,3 @@ LocalPlayer.CharacterAdded:Connect(function(character)
         end)
     end
 end)
-
-
-
-
