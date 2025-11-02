@@ -92,7 +92,7 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
-    Auto = Window:AddTab("Auto", "zap"),
+    Auto = Window:AddTab("Auto", "play"),
     ESP = Window:AddTab("ESP", "eye"),
     LCorp = Window:AddTab("L.Corp", "building"),
     AutoDrop = Window:AddTab("Auto Drop", "trash-2"),
@@ -1165,10 +1165,8 @@ InstantAttackToggle:AddKeyPicker("InstantAttackKeybind", {
     end,
 })
 ToolsGroupBox:AddDivider()
-ToolsGroupBox:AddLabel("Credits: dustpuffs"):AddColorPicker("CreditsColor", {
-    Default = Color3.fromRGB(128, 128, 128),
-    Title = "Credits Color",
-})
+ToolsGroupBox:AddLabel("Credits to dust_puffs for the")
+ToolsGroupBox:AddLabel("instant attack method.")
 ToolsGroupBox:AddDivider()
 
 ToolsGroupBox:AddButton({
