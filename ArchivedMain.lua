@@ -9,7 +9,7 @@ local ValidKeys = {
     ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = {hwid = "E8DC9AAB-A48E-4C07-B17A-269865411193", name = "Zarc's key"},
     ["XMNB54389DFCGZDMBTWEE4RGFASEFLB"] = {hwid = "3587044F-092C-41D5-A61B-778D18618386", name = "Sembrell's key"},
     ["P9Q2N5W8R3T6Y1M4K7J0H2V5X8C3F6L"] = {hwid = "", name = "DustPuff's key"},
-    ["90EALWRAWETVGAWSCVGPTAPW4903275"] = {hwid = "", name = "Eshteme's key"},
+    ["90EALWRAWETVGAWSCVGPTAPW4903275"] = {hwid = "3F25698E-B36C-423A-A0AE-6EBE6AF77ADD", name = "Eshteme's key"},
 }
 
 local DiscordWebhook = "https://discord.com/api/webhooks/1432346858629496854/-cm23r_TiuqYzOr75kfdzkrihcPi883pOQz58mFjpK0DL9mNzgSk82KpeuCMfzlff241"
@@ -322,4 +322,5 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
+
 
