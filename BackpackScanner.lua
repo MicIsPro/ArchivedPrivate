@@ -37,7 +37,9 @@ local filteredItems = {
     "Essence of Destruction",
     "Busted Clock",
     "Seeker's Nail",
-    "Silencing glove"
+    "Silencing glove",
+    "Memorial Coffin",
+    "Singularity",
 }
 
 local excludedItems = {
@@ -901,3 +903,4 @@ spawn(function()
 end)
 
 updateDisplay()
+
