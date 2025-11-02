@@ -40,6 +40,48 @@ local specialUsers = {
 }
 local friendsList = {}
 
+-- CANDY FARM VARIABLES
+local candyFarming = false
+local currentDoorIndex = 1
+local nobodyHome = false
+local TARGET_ANIM_ID = "rbxassetid://135199539090635"
+local currentTargetDoor = nil
+local loopTeleporting = false
+local doorCoordinates = {
+    {-156.51, 27.50, 1016.64},
+    {-128.30, 27.89, 1047.26},
+    {-262.11, 28.50, 937.58},
+    {-244.57, 28.12, 1183.00},
+    {80.80, 27.95, 938.26},
+    {-108.93, 27.89, 1247.50},
+    {-66.88, 27.89, 640.45},
+    {332.25, 29.82, 676.55},
+    {-201.30, 27.89, 499.26},
+    {403.35, 27.89, 827.93},
+    {-61.31, 27.50, 850.26},
+    {-223.49, 31.11, 619.45},
+    {302.89, 30.67, 875.00},
+    {346.95, 27.50, 1048.38},
+    {259.51, 68.09, 207.45},
+    {-286.87, 27.50, 1107.87},
+    {58.10, 27.50, 1216.42},
+    {-326.49, 27.50, 711.13},
+    {210.40, 27.50, 517.63},
+    {218.95, 64.50, 242.76},
+    {-339.86, 31.57, 861.44},
+    {104.04, 31.53, 703.40},
+    {-67.30, 31.27, 528.40},
+    {-372.36, 31.52, 997.25},
+    {590.88, 68.41, -7.45},
+    {488.10, 68.62, -70.10},
+    {-339.86, 31.57, 861.44},
+    {-372.36, 31.52, 997.25},
+    {590.88, 68.41, -7.45},
+    {488.10, 68.62, -70.10}
+}
+local allDoorsInWorkspace = {}
+local ClaimDoor = ReplicatedStorage.Events.ClaimDoor
+
 local Window = Library:CreateWindow({
     Title = "Archived",
     Footer = "Private Gui - Devotion_M on discord",
@@ -50,6 +92,7 @@ local Window = Library:CreateWindow({
 
 local Tabs = {
     Main = Window:AddTab("Main", "user"),
+    Auto = Window:AddTab("Auto", "zap"),
     ESP = Window:AddTab("ESP", "eye"),
     LCorp = Window:AddTab("L.Corp", "building"),
     AutoDrop = Window:AddTab("Auto Drop", "trash-2"),
@@ -137,6 +180,196 @@ local itemsToDrop = {
     "Book Of Hana Association", "Book Of Shi Association", "Book Of Stray Dogs",
     "Scrap Metal", "Gun Parts", "Heavy Handle", "Gears", "Handle", "Light Handle", "Dual Handle"
 }
+
+-- CANDY FARM FUNCTIONS
+local function hasProximityPrompt(instance)
+    if instance:IsA("ProximityPrompt") then return true end
+    for _, child in ipairs(instance:GetDescendants()) do
+        if child:IsA("ProximityPrompt") then return true end
+    end
+    return false
+end
+
+local function findDoorInBuilding(building)
+    local doorNames = {"BuildingMeshDoor", "Door", "MeshDoor"}
+    for _, doorName in ipairs(doorNames) do
+        local door = building:FindFirstChild(doorName)
+        if door and hasProximityPrompt(door) then return door end
+    end
+    for _, child in ipairs(building:GetChildren()) do
+        if hasProximityPrompt(child) then return child end
+    end
+    return nil
+end
+
+local function searchFoldersRecursively(parent, doors)
+    for _, child in ipairs(parent:GetChildren()) do
+        if child:IsA("Folder") then
+            searchFoldersRecursively(child, doors)
+        else
+            local door = findDoorInBuilding(child)
+            if door then table.insert(doors, door) end
+        end
+    end
+end
+
+local function findClosestDoorToCoordinate(coord)
+    local targetPosition = Vector3.new(coord[1], coord[2], coord[3])
+    local closestDoor = nil
+    local shortestDistance = math.huge
+    
+    for _, door in ipairs(allDoorsInWorkspace) do
+        local distance = (door.Position - targetPosition).Magnitude
+        if distance < shortestDistance then
+            shortestDistance = distance
+            closestDoor = door
+        end
+    end
+    
+    return closestDoor
+end
+
+local function isAnimationPlaying(humanoid)
+    for _, track in ipairs(humanoid:GetPlayingAnimationTracks()) do
+        if track.Animation.AnimationId == TARGET_ANIM_ID then
+            return true, track
+        end
+    end
+    return false, nil
+end
+
+local function checkForAnimation(humanoid, timeout)
+    local startTime = tick()
+    while (tick() - startTime) < timeout do
+        if isAnimationPlaying(humanoid) then
+            return true
+        end
+        task.wait(0.1)
+    end
+    return false
+end
+
+local function waitForAnimationToStop(humanoid)
+    while true do
+        local playing, track = isAnimationPlaying(humanoid)
+        if not playing then break end
+        task.wait(0.1)
+    end
+end
+
+local function teleportToDoor(coord)
+    local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    local humanoid = character:WaitForChild("Humanoid")
+    
+    nobodyHome = false
+    
+    local door = findClosestDoorToCoordinate(coord)
+    if not door then
+        nobodyHome = true
+        return
+    end
+    
+    currentTargetDoor = door
+    
+    humanoidRootPart.CFrame = door.CFrame * CFrame.new(0, 0, 5)
+    
+    local proximityPrompt = door:FindFirstChildOfClass("ProximityPrompt", true)
+    if proximityPrompt then
+        for i = 1, 3 do
+            fireproximityprompt(proximityPrompt)
+            task.wait(0.1)
+        end
+    end
+    
+    task.wait(0.3)
+    
+    if not checkForAnimation(humanoid, 0.5) then
+        nobodyHome = true
+        currentTargetDoor = nil
+        return
+    end
+    
+    loopTeleporting = true
+    humanoidRootPart.Anchored = true
+    
+    ClaimDoor:FireServer("Give", door)
+    task.wait(0.1)
+    ClaimDoor:FireServer("Cancel", door)
+    task.wait(0.5)
+    ClaimDoor:FireServer("Give", door)
+    task.wait(0.5)
+    ClaimDoor:FireServer("Give", door)
+    task.wait(1)
+    
+    for i = 1, 3 do
+        firesignal(ClaimDoor.OnClientEvent, character, "Resume", door)
+        task.wait(0.1)
+    end
+    
+    task.wait(0.5)
+    ClaimDoor:FireServer("Give", door)
+    
+    waitForAnimationToStop(humanoid)
+    
+    loopTeleporting = false
+    humanoidRootPart.Anchored = false
+    currentTargetDoor = nil
+end
+
+local function startCandyFarm()
+    local buildingsFolder = workspace.Map.Buildings
+    allDoorsInWorkspace = {}
+    searchFoldersRecursively(buildingsFolder, allDoorsInWorkspace)
+    
+    spawn(function()
+        while candyFarming do
+            task.wait(0.2)
+            local character = LocalPlayer.Character
+            if character and currentTargetDoor then
+                firesignal(ClaimDoor.OnClientEvent, character, "Resume", currentTargetDoor)
+            end
+        end
+    end)
+    
+    spawn(function()
+        while candyFarming do
+            task.wait()
+            if loopTeleporting and currentTargetDoor then
+                local character = LocalPlayer.Character
+                if character then
+                    local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                    if humanoidRootPart then
+                        humanoidRootPart.CFrame = currentTargetDoor.CFrame * CFrame.new(0, 0, -7)
+                        humanoidRootPart.Anchored = true
+                    end
+                end
+            end
+        end
+    end)
+    
+    while candyFarming do
+        if currentDoorIndex > #doorCoordinates then
+            currentDoorIndex = 1
+        end
+        
+        local coord = doorCoordinates[currentDoorIndex]
+        
+        teleportToDoor(coord)
+        
+        currentDoorIndex = currentDoorIndex + 1
+    end
+end
+
+local function stopCandyFarm()
+    candyFarming = false
+    loopTeleporting = false
+    if LocalPlayer.Character then
+        local hrp = LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then hrp.Anchored = false end
+    end
+    currentTargetDoor = nil
+end
 
 local function teleportToPosition(position)
     local character = LocalPlayer.Character
@@ -677,6 +910,30 @@ local function updateNPCESPVisibility()
     end
 end
 
+-- CANDY FARM TAB
+local CandyFarmGroupBox = Tabs.Auto:AddLeftGroupbox("Candy Farm", "candy")
+
+local CandyFarmToggle = CandyFarmGroupBox:AddToggle("CandyFarmToggle", {
+    Text = "Candy Farm",
+    Default = false,
+    Callback = function(Value)
+        candyFarming = Value
+        if Value then
+            task.spawn(startCandyFarm)
+        else
+            stopCandyFarm()
+        end
+    end,
+})
+
+CandyFarmToggle:AddKeyPicker("CandyFarmKeybind", {
+    Text = "Candy Farm",
+    Mode = "Toggle",
+    Callback = function()
+        CandyFarmToggle:SetValue(not Toggles.CandyFarmToggle.Value)
+    end,
+})
+
 local MainGroupBox = Tabs.Main:AddLeftGroupbox("Movement", "zap")
 
 addToggleWithKeybind(MainGroupBox, "TpWalk", "Speed Walk", "SpeedWalkKeybind", startTpWalk, stopTpWalk)
@@ -844,18 +1101,25 @@ local instantAttackConnection = nil
 
 local function executeAttack()
     if not LocalPlayer.Character then return end
+    
     local weapon = LocalPlayer.Character:FindFirstChild("Weapon")
     if not weapon or not weapon.Value then return end
+    
     local weaponInfo = ReplicatedStorage.WeaponINFO:FindFirstChild(weapon.Value)
     if not weaponInfo then return end
+    
     local attackAnim = weaponInfo:FindFirstChild("AttackAnimation1")
     if not attackAnim then return end
+    
     local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
     if not humanoid then return end
+    
     local animator = humanoid:FindFirstChild("Animator")
     if not animator then return end
+    
     local track = animator:LoadAnimation(attackAnim)
     track:Play()
+    
     local timeUntilHitbox = weaponInfo:FindFirstChild("TimeUntilHitbox")
     if timeUntilHitbox and timeUntilHitbox.Value then
         track.TimePosition = timeUntilHitbox.Value
@@ -901,8 +1165,10 @@ InstantAttackToggle:AddKeyPicker("InstantAttackKeybind", {
     end,
 })
 ToolsGroupBox:AddDivider()
-ToolsGroupBox:AddLabel("Credits to dust_puffs for the")
-ToolsGroupBox:AddLabel("instant attack method.")
+ToolsGroupBox:AddLabel("Credits: dustpuffs"):AddColorPicker("CreditsColor", {
+    Default = Color3.fromRGB(128, 128, 128),
+    Title = "Credits Color",
+})
 ToolsGroupBox:AddDivider()
 
 ToolsGroupBox:AddButton({
