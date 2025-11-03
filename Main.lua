@@ -1200,33 +1200,19 @@ ToolsGroupBox:AddButton({
 })
 
 ToolsGroupBox:AddButton({
-    Text = "Equip Accessories",
+    Text = "Open Tres Workshop",
     Func = function()
         local success = pcall(function()
-            local RS = game:GetService("ReplicatedStorage")
-            local AddAccessory = RS.Events.AddAccessory
-            local AP = RS.Assets.Accessories
-            local acc = {
-                {"Hats", "Hood"},
-                {"Face", "Rememberance Of Fell Bullet"},
-                {"Torso", "Waxen Wing"},
-                {"Arms", "Soul Kings Cloak"},
-                {"Legs", "Twinhook Straps"},
-                {"Lights", "Memento Mori"},
-            }
-            for _, a in ipairs(acc) do
-                AddAccessory:FireServer(a[1], AP[a[1]][a[2]])
-            end
-            local UpdateHairCut = RS.Events.UpdateHairCut
-            UpdateHairCut:FireServer(",15986447340,13619384229 ,,")
+            local OpenWorkshop = ReplicatedStorage.Events.OpenWorkshop
+            OpenWorkshop:FireServer("Open")
         end)
         Library:Notify({
-            Title = success and "Accessories Equipped" or "Error",
-            Description = success and "All accessories have been equipped successfully!" or "Failed to equip accessories",
+            Title = success and "Workshop Opened" or "Error",
+            Description = success and "Tres Workshop has been opened!" or "Failed to open workshop",
             Time = 3,
         })
     end,
-    Tooltip = "Equips your preset accessories",
+    Tooltip = "Opens Tres Workshop",
 })
 
 local TeleportGroupBox = Tabs.Main:AddLeftGroupbox("Teleports", "map-pin")
