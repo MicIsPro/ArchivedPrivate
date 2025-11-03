@@ -6,7 +6,8 @@ local Player = Players.LocalPlayer :: Player
 local ValidKeys = {
     ["JSE6D598TSLKA4ERT89AERTHTFGAE56"] = {hwid = "EDB6D544-4C2F-4BC9-BCD4-266BC94809FE", name = "Mic's key"},
     ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = {hwid = "", name = "Fabi's key"},
-    ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = {hwid = "E8DC9AAB-A48E-4C07-B17A-269865411193", name = "Zarc's key"},
+    ["G4958ESRKTJ5H4RT09A45ETAW4RKTCV"] = {hwid = "E8DC9AAB-A48E-4C07-B17A-269865411193", name = "Zarc's XENO key"},
+    ["SLXD59DYTYHMNBA4RETFKJOGVVHNMFJ"] = {hwid = "", name = "Zarc WAVE key"},
     ["XMNB54389DFCGZDMBTWEE4RGFASEFLB"] = {hwid = "3587044F-092C-41D5-A61B-778D18618386", name = "Sembrell's key"},
     ["P9Q2N5W8R3T6Y1M4K7J0H2V5X8C3F6L"] = {hwid = "", name = "DustPuff's key"},
     ["90EALWRAWETVGAWSCVGPTAPW4903275"] = {hwid = "3F25698E-B36C-423A-A0AE-6EBE6AF77ADD", name = "Eshteme's key"},
@@ -322,6 +323,7 @@ else
     SendNotification("Key System", "⚠ HWID not recognized - Please enter your key", 5)
     CreateKeyGUI()
 end
+
 
 
 
