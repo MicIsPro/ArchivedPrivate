@@ -856,3 +856,142 @@ spawn(function()
 end)
 
 updateDisplay()
+wait(0.5)
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local localPlayer = Players.LocalPlayer
+
+local scanResults = {}
+
+for _, player in pairs(Players:GetPlayers()) do
+	if player ~= localPlayer then
+		if player:FindFirstChild("Backpack") then
+			local itemCount = 0
+			for _, item in pairs(player.Backpack:GetChildren()) do
+				if string.lower(item.Name) == string.lower("Singularity Extractor") then
+					itemCount += 1
+				end
+			end
+			if itemCount > 0 then
+				table.insert(scanResults, {player = player, count = itemCount})
+			end
+		end
+	end
+end
+
+local cardHeight = 70 + (#scanResults > 0 and (#scanResults * 28) or 28)
+
+local extractorGui = Instance.new("ScreenGui")
+extractorGui.Name = "ExtractorScanNotif"
+extractorGui.ResetOnSpawn = false
+extractorGui.Parent = localPlayer:WaitForChild("PlayerGui")
+
+local notifCard = Instance.new("Frame")
+notifCard.Size = UDim2.new(0, 300, 0, cardHeight)
+notifCard.Position = UDim2.new(1, 10, 0.5, -(cardHeight / 2))
+notifCard.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+notifCard.BorderSizePixel = 0
+notifCard.ClipsDescendants = true
+notifCard.Parent = extractorGui
+
+local notifCorner = Instance.new("UICorner")
+notifCorner.CornerRadius = UDim.new(0, 12)
+notifCorner.Parent = notifCard
+
+local notifGradient = Instance.new("UIGradient")
+notifGradient.Color = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(93, 63, 211))
+})
+notifGradient.Rotation = 135
+notifGradient.Parent = notifCard
+
+local accentBar = Instance.new("Frame")
+accentBar.Size = UDim2.new(0, 4, 1, 0)
+accentBar.BackgroundColor3 = Color3.fromRGB(93, 63, 211)
+accentBar.BorderSizePixel = 0
+accentBar.Parent = notifCard
+
+local accentBarCorner = Instance.new("UICorner")
+accentBarCorner.CornerRadius = UDim.new(0, 4)
+accentBarCorner.Parent = accentBar
+
+local notifTitle = Instance.new("TextLabel")
+notifTitle.Size = UDim2.new(1, -55, 0, 30)
+notifTitle.Position = UDim2.new(0, 16, 0, 10)
+notifTitle.BackgroundTransparency = 1
+notifTitle.Text = "Extractor Scanner"
+notifTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+notifTitle.TextSize = 14
+notifTitle.Font = Enum.Font.GothamBold
+notifTitle.TextXAlignment = Enum.TextXAlignment.Left
+notifTitle.Parent = notifCard
+
+local notifCloseBtn = Instance.new("TextButton")
+notifCloseBtn.Size = UDim2.new(0, 28, 0, 28)
+notifCloseBtn.Position = UDim2.new(1, -36, 0, 8)
+notifCloseBtn.BackgroundColor3 = Color3.fromRGB(93, 63, 211)
+notifCloseBtn.Text = "×"
+notifCloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+notifCloseBtn.TextSize = 18
+notifCloseBtn.Font = Enum.Font.GothamBold
+notifCloseBtn.BorderSizePixel = 0
+notifCloseBtn.Parent = notifCard
+
+local notifCloseBtnCorner = Instance.new("UICorner")
+notifCloseBtnCorner.CornerRadius = UDim.new(0, 6)
+notifCloseBtnCorner.Parent = notifCloseBtn
+
+local notifDivider = Instance.new("Frame")
+notifDivider.Size = UDim2.new(1, -20, 0, 1)
+notifDivider.Position = UDim2.new(0, 10, 0, 44)
+notifDivider.BackgroundColor3 = Color3.fromRGB(93, 63, 211)
+notifDivider.BorderSizePixel = 0
+notifDivider.Parent = notifCard
+
+if #scanResults == 0 then
+	local noResultsLabel = Instance.new("TextLabel")
+	noResultsLabel.Size = UDim2.new(1, -20, 0, 28)
+	noResultsLabel.Position = UDim2.new(0, 16, 0, 50)
+	noResultsLabel.BackgroundTransparency = 1
+	noResultsLabel.Text = "No players have the singularity extractor."
+	noResultsLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+	noResultsLabel.TextSize = 13
+	noResultsLabel.Font = Enum.Font.Gotham
+	noResultsLabel.TextXAlignment = Enum.TextXAlignment.Left
+	noResultsLabel.Parent = notifCard
+else
+	for i, data in ipairs(scanResults) do
+		local resultRow = Instance.new("TextLabel")
+		resultRow.Size = UDim2.new(1, -20, 0, 24)
+		resultRow.Position = UDim2.new(0, 16, 0, 46 + (i * 26))
+		resultRow.BackgroundTransparency = 1
+		resultRow.Text = "• " .. data.player.Name .. "  —  x" .. data.count
+		resultRow.TextColor3 = Color3.fromRGB(255, 255, 255)
+		resultRow.TextSize = 13
+		resultRow.Font = Enum.Font.Gotham
+		resultRow.TextXAlignment = Enum.TextXAlignment.Left
+		resultRow.Parent = notifCard
+	end
+end
+
+local slideIn = TweenService:Create(notifCard, TweenInfo.new(0.4, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
+	Position = UDim2.new(1, -315, 0.5, -(cardHeight / 2))
+})
+slideIn:Play()
+
+local function dismissNotif()
+	if notifCard and notifCard.Parent then
+		local slideOut = TweenService:Create(notifCard, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
+			Position = UDim2.new(1, 10, 0.5, -(cardHeight / 2))
+		})
+		slideOut:Play()
+		slideOut.Completed:Connect(function()
+			extractorGui:Destroy()
+		end)
+	end
+end
+
+notifCloseBtn.MouseButton1Click:Connect(dismissNotif)
+
+task.delay(8, dismissNotif)
