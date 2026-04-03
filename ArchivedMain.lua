@@ -7,7 +7,7 @@ local Player = Players.LocalPlayer :: Player
 local ValidKeys = {
     ["JSE6D598TSLKA4ERT89AERTHTFGAE56"] = {hwid = "aC2746D41-7990-450F-8F82-34D5FF0B2D33", name = "Mic's key"},
     ["K7X9M2QP8WN5VB1ZT4RHJ6YC2LD8PF3"] = {hwid = "", name = "Fabi's key"},
-    [""] = {hwid = "", name = "Zarc's key"},
+    ["IHATENIGGERS123"] = {hwid = "231F3C07-F948-4383-90AC-DBC79522B2D8", name = "Zarc's key"},
     ["XMNB54389DFCGZDMBTWEE4RGFASEFLB"] = {hwid = "EA1E7342-69B5-4199-9278-80AD2324B01C", name = "Sembrell's key"},
 }
 
